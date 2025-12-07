@@ -11,7 +11,7 @@ const AthleteForm = ({ onClose }) => {
         lastName: '',
         gender: 'Male',
         weapon: 'Foil',
-        birthYear: 2010,
+        dob: '',
         notes: ''
     });
 
@@ -99,8 +99,15 @@ const AthleteForm = ({ onClose }) => {
                             </select>
                         </div>
                         <div className="col-span-1">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Birth Year</label>
-                            <input required type="number" min="1950" max="2020" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value={formData.birthYear} onChange={e => setFormData({ ...formData, birthYear: e.target.value })} />
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
+                            <input
+                                required
+                                type="date"
+                                max={new Date().toISOString().split('T')[0]}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                value={formData.dob}
+                                onChange={e => setFormData({ ...formData, dob: e.target.value })}
+                            />
                         </div>
                     </div>
 
@@ -197,8 +204,8 @@ const AthleteProfileModal = ({ athlete, initialTab = 'overview', onClose }) => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id
-                                        ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
-                                        : 'text-slate-500 hover:bg-white/50 hover:text-slate-700'
+                                    ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
+                                    : 'text-slate-500 hover:bg-white/50 hover:text-slate-700'
                                     }`}
                             >
                                 <tab.icon className="w-4 h-4" />
