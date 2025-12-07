@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    /* Using @apply in v4 might need different handling or it works if using postcss plugin */
+    /* For safety in v4, we can use theme variables or just standard css with apply */
+    @apply antialiased text-slate-900 bg-slate-50;
+  }
+}
