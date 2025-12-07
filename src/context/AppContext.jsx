@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { seedCompetitions } from '../data/seedCompetitions';
+import { athletesAPI } from '../lib/athletesAPI';
 
 const AppContext = createContext();
 
@@ -28,16 +29,31 @@ export const AppProvider = ({ children }) => {
         setCurrentUser(null);
     };
 
-    // Load initial state from localStorage or use defaults
-    const [athletes, setAthletes] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_athletes');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            console.error("Failed to parse athletes", e);
-            return [];
-        }
-    });
+    // Load initial state from Supabase or localStorage fallback
+    const [athletes, setAthletes] = useState([]);
+    const [athletesLoading, setAthletesLoading] = useState(true);
+
+    // Load athletes from Supabase on mount
+    useEffect(() => {
+        const loadAthletes = async () => {
+            try {
+                const data = await athletesAPI.getAll();
+                setAthletes(data);
+            } catch (error) {
+                console.error('Failed to load athletes from Supabase:', error);
+                // Fallback to localStorage
+                try {
+                    const saved = localStorage.getItem('fencing_athletes');
+                    if (saved) setAthletes(JSON.parse(saved));
+                } catch (e) {
+                    console.error('Failed to load from localStorage:', e);
+                }
+            } finally {
+                setAthletesLoading(false);
+            }
+        };
+        loadAthletes();
+    }, []);
 
     const [competitions, setCompetitions] = useState(() => {
         try {
@@ -160,16 +176,38 @@ export const AppProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('fencing_lessonBookings', JSON.stringify(lessonBookings)); }, [lessonBookings]);
 
     // Actions
-    const addAthlete = (athlete) => {
-        setAthletes(prev => [...prev, { ...athlete, id: crypto.randomUUID() }]);
+    const addAthlete = async (athlete) => {
+        try {
+            const newAthlete = await athletesAPI.add(athlete);
+            setAthletes(prev => [...prev, newAthlete]);
+        } catch (error) {
+            console.error('Failed to add athlete:', error);
+            // Fallback to localStorage
+            const newAthlete = { ...athlete, id: crypto.randomUUID() };
+            setAthletes(prev => [...prev, newAthlete]);
+        }
     };
 
-    const updateAthleteProfile = (id, updates) => {
-        setAthletes(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+    const updateAthleteProfile = async (id, updates) => {
+        try {
+            const updated = await athletesAPI.update(id, updates);
+            setAthletes(prev => prev.map(a => a.id === id ? updated : a));
+        } catch (error) {
+            console.error('Failed to update athlete:', error);
+            // Fallback to localStorage
+            setAthletes(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+        }
     };
 
-    const removeAthlete = (id) => {
-        setAthletes(prev => prev.filter(a => a.id !== id));
+    const removeAthlete = async (id) => {
+        try {
+            await athletesAPI.remove(id);
+            setAthletes(prev => prev.filter(a => a.id !== id));
+        } catch (error) {
+            console.error('Failed to remove athlete:', error);
+            // Fallback to localStorage
+            setAthletes(prev => prev.filter(a => a.id !== id));
+        }
     };
 
     const addCompetition = (competition) => {
