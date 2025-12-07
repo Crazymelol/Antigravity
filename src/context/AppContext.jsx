@@ -1,6 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { seedCompetitions } from '../data/seedCompetitions';
-import { athletesAPI } from '../lib/athletesAPI';
+import { athletesAPI } from './lib/athletesAPI';
+import {
+    competitionsAPI,
+    attendanceAPI,
+    wellnessAPI,
+    workloadAPI,
+    athleteStatusAPI,
+    announcementsAPI,
+    refereesAPI,
+    inventoryAPI,
+    lessonBookingsAPI
+} from './lib/supabaseAPI';
+
 
 const AppContext = createContext();
 
@@ -55,71 +67,31 @@ export const AppProvider = ({ children }) => {
         loadAthletes();
     }, []);
 
-    const [competitions, setCompetitions] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_competitions');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.length > 0) return parsed;
+    const [competitions, setCompetitions] = useState([]);
+
+    useEffect(() => {
+        const loadCompetitions = async () => {
+            try {
+                const data = await competitionsAPI.getAll();
+                setCompetitions(data.length > 0 ? data : seedCompetitions);
+            } catch (error) {
+                console.error('Failed to load competitions:', error);
+                setCompetitions(seedCompetitions);
             }
-            return seedCompetitions;
-        } catch (e) {
-            console.error("Failed to parse competitions", e);
-            return seedCompetitions;
-        }
-    });
+        };
+        loadCompetitions();
+    }, []);
 
-    const [attendance, setAttendance] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_attendance');
-            return saved ? JSON.parse(saved) : {};
-        } catch (e) {
-            console.error("Failed to parse attendance", e);
-            return {};
-        }
-    });
+    const [attendance, setAttendance] = useState({});
+    const [wellness, setWellness] = useState({});
+    const [workload, setWorkload] = useState({});
+    const [athleteStatus, setAthleteStatus] = useState({});
+    const [announcements, setAnnouncements] = useState([]);
+    const [referees, setReferees] = useState([]);
+    const [inventory, setInventory] = useState([]);
+    const [lessonBookings, setLessonBookings] = useState([]);
 
-    const [wellness, setWellness] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_wellness');
-            return saved ? JSON.parse(saved) : {};
-        } catch (e) {
-            console.error("Failed to parse wellness", e);
-            return {};
-        }
-    });
-
-    const [workload, setWorkload] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_workload');
-            return saved ? JSON.parse(saved) : {};
-        } catch (e) {
-            console.error("Failed to parse workload", e);
-            return {};
-        }
-    });
-
-    // --- NEW FEATURES: Status & Announcements ---
-    const [athleteStatus, setAthleteStatus] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_athleteStatus');
-            return saved ? JSON.parse(saved) : {};
-        } catch (e) {
-            return {};
-        }
-    });
-
-    const [announcements, setAnnouncements] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_announcements');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
-
-    // --- NEW FEATURES: Admin & Coach Approval ---
-    // List of approved coaches
+    // Keep coaches local for now (auth not implemented yet)
     const [coaches, setCoaches] = useState(() => {
         try {
             const saved = localStorage.getItem('fencing_coaches');
@@ -129,7 +101,6 @@ export const AppProvider = ({ children }) => {
         } catch { return []; }
     });
 
-    // List of pending coach requests
     const [pendingCoaches, setPendingCoaches] = useState(() => {
         try {
             const saved = localStorage.getItem('fencing_pendingCoaches');
@@ -137,29 +108,59 @@ export const AppProvider = ({ children }) => {
         } catch { return []; }
     });
 
-    // --- Referee Management ---
-    const [referees, setReferees] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_referees');
-            return saved ? JSON.parse(saved) : [];
-        } catch { return []; }
-    });
+    // Load all data from Supabase
+    useEffect(() => {
+        const loadAllData = async () => {
+            try {
+                const [attendanceData, wellnessData, workloadData, statusData, announcementsData, refereesData, inventoryData, lessonsData] = await Promise.all([
+                    attendanceAPI.getAll(),
+                    wellnessAPI.getAll(),
+                    workloadAPI.getAll(),
+                    athleteStatusAPI.getAll(),
+                    announcementsAPI.getAll(),
+                    refereesAPI.getAll(),
+                    inventoryAPI.getAll(),
+                    lessonBookingsAPI.getAll()
+                ]);
 
-    // --- Inventory/Armory Management ---
-    const [inventory, setInventory] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_inventory');
-            return saved ? JSON.parse(saved) : [];
-        } catch { return []; }
-    });
+                // Convert arrays to objects for attendance, wellness, workload, status
+                const attendanceObj = {};
+                attendanceData.forEach(a => {
+                    if (!attendanceObj[a.athlete_id]) attendanceObj[a.athlete_id] = {};
+                    attendanceObj[a.athlete_id][a.date] = a.present;
+                });
 
-    // --- Lesson Bookings ---
-    const [lessonBookings, setLessonBookings] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_lessonBookings');
-            return saved ? JSON.parse(saved) : [];
-        } catch { return []; }
-    });
+                const wellnessObj = {};
+                wellnessData.forEach(w => {
+                    if (!wellnessObj[w.athlete_id]) wellnessObj[w.athlete_id] = [];
+                    wellnessObj[w.athlete_id].push(w);
+                });
+
+                const workloadObj = {};
+                workloadData.forEach(w => {
+                    if (!workloadObj[w.athlete_id]) workloadObj[w.athlete_id] = [];
+                    workloadObj[w.athlete_id].push(w);
+                });
+
+                const statusObj = {};
+                statusData.forEach(s => {
+                    statusObj[s.athlete_id] = { status: s.status, note: s.note };
+                });
+
+                setAttendance(attendanceObj);
+                setWellness(wellnessObj);
+                setWorkload(workloadObj);
+                setAthleteStatus(statusObj);
+                setAnnouncements(announcementsData);
+                setReferees(refereesData);
+                setInventory(inventoryData);
+                setLessonBookings(lessonsData);
+            } catch (error) {
+                console.error('Failed to load data from Supabase:', error);
+            }
+        };
+        loadAllData();
+    }, []);
 
     // Persistence
     useEffect(() => { localStorage.setItem('fencing_athletes', JSON.stringify(athletes)); }, [athletes]);
@@ -210,68 +211,92 @@ export const AppProvider = ({ children }) => {
         }
     };
 
-    const addCompetition = (competition) => {
-        setCompetitions(prev => [...prev, { ...competition, id: crypto.randomUUID() }]);
+    const addCompetition = async (competition) => {
+        try {
+            const newComp = await competitionsAPI.add(competition);
+            setCompetitions(prev => [newComp, ...prev]);
+        } catch (error) {
+            console.error('Failed to add competition:', error);
+        }
     };
 
-    const removeCompetition = (id) => {
-        setCompetitions(prev => prev.filter(c => c.id !== id));
+    const removeCompetition = async (id) => {
+        try {
+            await competitionsAPI.remove(id);
+            setCompetitions(prev => prev.filter(c => c.id !== id));
+        } catch (error) {
+            console.error('Failed to remove competition:', error);
+        }
     };
 
-    const markAttendance = (date, athleteId, isPresent) => {
-        setAttendance(prev => {
-            const currentDay = prev[date] || [];
-            let newDay;
-            if (isPresent) {
-                if (!currentDay.includes(athleteId)) {
-                    newDay = [...currentDay, athleteId];
-                } else {
-                    newDay = currentDay;
-                }
-            } else {
-                newDay = currentDay.filter(id => id !== athleteId);
-            }
-            return { ...prev, [date]: newDay };
-        });
+    const markAttendance = async (athleteId, date, present = true) => {
+        try {
+            await attendanceAPI.mark(athleteId, date, present);
+            setAttendance(prev => ({
+                ...prev,
+                [athleteId]: { ...prev[athleteId], [date]: present }
+            }));
+        } catch (error) {
+            console.error('Failed to mark attendance:', error);
+        }
     };
 
-    const submitWellness = (date, athleteId, data) => {
-        setWellness(prev => {
-            const dayRecords = prev[date] || {};
-            const scores = [data.sleep, data.fatigue, data.soreness, data.stress, data.mood];
-            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-            return { ...prev, [date]: { ...dayRecords, [athleteId]: { ...data, avg } } };
-        });
+
+    const submitWellness = async (date, athleteId, data) => {
+        try {
+            await wellnessAPI.submit({ athlete_id: athleteId, date, ...data });
+            setWellness(prev => {
+                const athleteRecords = prev[athleteId] || [];
+                const scores = [data.sleep, data.fatigue, data.soreness, data.stress, data.mood];
+                const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                return { ...prev, [athleteId]: [...athleteRecords, { ...data, date, avg }] };
+            });
+        } catch (error) {
+            console.error('Failed to submit wellness:', error);
+        }
     };
 
-    const submitWorkload = (date, athleteId, data) => {
-        setWorkload(prev => {
-            const dayRecords = prev[date] || {};
-            const load = data.rpe * data.duration;
-            return { ...prev, [date]: { ...dayRecords, [athleteId]: { ...data, load } } };
-        });
+    const submitWorkload = async (date, athleteId, data) => {
+        try {
+            await workloadAPI.submit({ athlete_id: athleteId, date, ...data });
+            setWorkload(prev => {
+                const athleteRecords = prev[athleteId] || [];
+                const load = data.rpe * data.duration;
+                return { ...prev, [athleteId]: [...athleteRecords, { ...data, date, load }] };
+            });
+        } catch (error) {
+            console.error('Failed to submit workload:', error);
+        }
     };
 
-    const updateAthleteStatus = (athleteId, status, note) => {
-        setAthleteStatus(prev => ({
-            ...prev,
-            [athleteId]: { status, note, updatedAt: new Date().toISOString() }
-        }));
+    const updateAthleteStatus = async (athleteId, status, note) => {
+        try {
+            await athleteStatusAPI.update(athleteId, status, note);
+            setAthleteStatus(prev => ({
+                ...prev,
+                [athleteId]: { status, note, updatedAt: new Date().toISOString() }
+            }));
+        } catch (error) {
+            console.error('Failed to update athlete status:', error);
+        }
     };
 
-    const addAnnouncement = (message, type = 'info') => {
-        const newAnnouncement = {
-            id: crypto.randomUUID(),
-            message,
-            type,
-            date: new Date().toISOString(),
-            author: 'Coach'
-        };
-        setAnnouncements(prev => [newAnnouncement, ...prev]);
+    const addAnnouncement = async (message, type = 'info') => {
+        try {
+            const newAnnouncement = await announcementsAPI.add({ message, type, author: 'Coach' });
+            setAnnouncements(prev => [newAnnouncement, ...prev]);
+        } catch (error) {
+            console.error('Failed to add announcement:', error);
+        }
     };
 
-    const removeAnnouncement = (id) => {
-        setAnnouncements(prev => prev.filter(a => a.id !== id));
+    const removeAnnouncement = async (id) => {
+        try {
+            await announcementsAPI.remove(id);
+            setAnnouncements(prev => prev.filter(a => a.id !== id));
+        } catch (error) {
+            console.error('Failed to remove announcement:', error);
+        }
     };
 
     // Coach Approval Actions
@@ -298,54 +323,105 @@ export const AppProvider = ({ children }) => {
     };
 
     // Referee Management Actions
-    const addReferee = (referee) => {
-        setReferees(prev => [...prev, { ...referee, id: crypto.randomUUID() }]);
+    const addReferee = async (referee) => {
+        try {
+            const newReferee = await refereesAPI.add(referee);
+            setReferees(prev => [...prev, newReferee]);
+        } catch (error) {
+            console.error('Failed to add referee:', error);
+        }
     };
 
-    const updateReferee = (id, updates) => {
-        setReferees(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+    const updateReferee = async (id, updates) => {
+        try {
+            const updated = await refereesAPI.update(id, updates);
+            setReferees(prev => prev.map(r => r.id === id ? updated : r));
+        } catch (error) {
+            console.error('Failed to update referee:', error);
+        }
     };
 
-    const removeReferee = (id) => {
-        setReferees(prev => prev.filter(r => r.id !== id));
+    const removeReferee = async (id) => {
+        try {
+            await refereesAPI.remove(id);
+            setReferees(prev => prev.filter(r => r.id !== id));
+        } catch (error) {
+            console.error('Failed to remove referee:', error);
+        }
     };
 
     // Inventory Management Actions
-    const addInventoryItem = (item) => {
-        setInventory(prev => [...prev, { ...item, id: crypto.randomUUID(), addedAt: new Date().toISOString() }]);
+    const addInventoryItem = async (item) => {
+        try {
+            const newItem = await inventoryAPI.add(item);
+            setInventory(prev => [...prev, newItem]);
+        } catch (error) {
+            console.error('Failed to add inventory item:', error);
+        }
     };
 
-    const updateInventoryItem = (id, updates) => {
-        setInventory(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+    const updateInventoryItem = async (id, updates) => {
+        try {
+            const updated = await inventoryAPI.update(id, updates);
+            setInventory(prev => prev.map(i => i.id === id ? updated : i));
+        } catch (error) {
+            console.error('Failed to update inventory item:', error);
+        }
     };
 
-    const removeInventoryItem = (id) => {
-        setInventory(prev => prev.filter(i => i.id !== id));
+    const removeInventoryItem = async (id) => {
+        try {
+            await inventoryAPI.remove(id);
+            setInventory(prev => prev.filter(i => i.id !== id));
+        } catch (error) {
+            console.error('Failed to remove inventory item:', error);
+        }
     };
 
-    const assignEquipment = (itemId, athleteId) => {
-        setInventory(prev => prev.map(i =>
-            i.id === itemId ? { ...i, assignedTo: athleteId, assignedAt: new Date().toISOString() } : i
-        ));
+    const assignEquipment = async (itemId, athleteId) => {
+        try {
+            const updated = await inventoryAPI.assign(itemId, athleteId);
+            setInventory(prev => prev.map(i => i.id === itemId ? updated : i));
+        } catch (error) {
+            console.error('Failed to assign equipment:', error);
+        }
     };
 
-    const returnEquipment = (itemId) => {
-        setInventory(prev => prev.map(i =>
-            i.id === itemId ? { ...i, assignedTo: null, assignedAt: null, returnedAt: new Date().toISOString() } : i
-        ));
+    const returnEquipment = async (itemId) => {
+        try {
+            const updated = await inventoryAPI.return(itemId);
+            setInventory(prev => prev.map(i => i.id === itemId ? updated : i));
+        } catch (error) {
+            console.error('Failed to return equipment:', error);
+        }
     };
 
     // Lesson Booking Actions
-    const addLessonBooking = (booking) => {
-        setLessonBookings(prev => [...prev, { ...booking, id: crypto.randomUUID(), createdAt: new Date().toISOString() }]);
+    const addLessonBooking = async (booking) => {
+        try {
+            const newBooking = await lessonBookingsAPI.add(booking);
+            setLessonBookings(prev => [...prev, newBooking]);
+        } catch (error) {
+            console.error('Failed to add lesson booking:', error);
+        }
     };
 
-    const updateLessonBooking = (id, updates) => {
-        setLessonBookings(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+    const updateLessonBooking = async (id, updates) => {
+        try {
+            const updated = await lessonBookingsAPI.update(id, updates);
+            setLessonBookings(prev => prev.map(b => b.id === id ? updated : b));
+        } catch (error) {
+            console.error('Failed to update lesson booking:', error);
+        }
     };
 
-    const cancelLessonBooking = (id) => {
-        setLessonBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Cancelled' } : b));
+    const cancelLessonBooking = async (id) => {
+        try {
+            const updated = await lessonBookingsAPI.cancel(id);
+            setLessonBookings(prev => prev.map(b => b.id === id ? updated : b));
+        } catch (error) {
+            console.error('Failed to cancel lesson booking:', error);
+        }
     };
 
     return (
