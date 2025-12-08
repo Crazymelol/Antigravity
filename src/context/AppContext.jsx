@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { seedCompetitions } from '../data/seedCompetitions';
-import { athletesAPI } from './lib/athletesAPI';
+import { athletesAPI } from '../lib/athletesAPI';
 import {
     competitionsAPI,
     attendanceAPI,
