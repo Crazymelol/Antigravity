@@ -11,7 +11,7 @@ import {
     refereesAPI,
     inventoryAPI,
     lessonBookingsAPI
-} from './lib/supabaseAPI';
+} from '../lib/supabaseAPI';
 
 
 const AppContext = createContext();
