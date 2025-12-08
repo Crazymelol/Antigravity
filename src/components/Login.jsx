@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { Swords, User, ShieldCheck, Users } from 'lucide-react';
+import { Swords, User, ShieldCheck, Users, Globe, Search } from 'lucide-react';
 
 const Login = () => {
     const { login, athletes, addAthlete, requestCoachAccess } = useApp();
@@ -409,6 +409,31 @@ const Login = () => {
                                         />
                                     </div>
                                 </div>
+
+                                {(signupData.lastName || signupData.firstName) && (
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <span className="text-xs font-bold text-slate-500 uppercase block mb-2">Check Official Spelling</span>
+                                        <div className="flex gap-2">
+                                            <a
+                                                href={`https://fie.org/athletes?name=${signupData.lastName}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-blue-600 hover:border-blue-200 flex items-center justify-center gap-1 transition-colors"
+                                            >
+                                                <Globe className="w-3 h-3" /> FIE Database
+                                            </a>
+                                            <a
+                                                href={`https://fencing.ophardt.online/en/search/athletes?name=${signupData.lastName}+${signupData.firstName}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-indigo-600 hover:border-indigo-200 flex items-center justify-center gap-1 transition-colors"
+                                            >
+                                                <Search className="w-3 h-3" /> Ophardt
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
                                     <input
