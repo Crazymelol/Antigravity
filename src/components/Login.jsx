@@ -4,14 +4,32 @@ import { useNavigate } from 'react-router-dom';
 import { Swords, User, ShieldCheck, Users } from 'lucide-react';
 
 const Login = () => {
-    const { login, athletes, coaches, requestCoachAccess } = useApp();
+    const { login, athletes, addAthlete, requestCoachAccess } = useApp();
     const navigate = useNavigate();
-    const [view, setView] = useState('main'); // main, coach-login, coach-register, admin, athlete-login, parent-login
+    const [view, setView] = useState('main'); // main, coach-login, coach-register, admin, athlete-login, parent-login, athlete-signup, parent-signup
     const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [coachPassword, setCoachPassword] = useState('');
     const [selectedAthlete, setSelectedAthlete] = useState(null);
     const [athleteDob, setAthleteDob] = useState('');
+
+    // Athlete signup state
+    const [signupData, setSignupData] = useState({
+        firstName: '',
+        lastName: '',
+        dob: '',
+        gender: 'Male',
+        weapon: 'Foil'
+    });
+
+    // Parent signup state
+    const [parentData, setParentData] = useState({
+        parentName: '',
+        parentEmail: '',
+        childName: '',
+        childDob: '',
+        linkExisting: true
+    });
 
     const handleCoachLogin = (e) => {
         e.preventDefault();
@@ -60,6 +78,56 @@ const Login = () => {
         } else {
             alert('Incorrect date of birth');
             setAthleteDob('');
+        }
+    };
+
+    const handleAthleteSignUp = async (e) => {
+        e.preventDefault();
+        try {
+            const fullName = `${signupData.lastName.toUpperCase()} ${signupData.firstName}`;
+            await addAthlete({
+                name: fullName,
+                dob: signupData.dob,
+                gender: signupData.gender,
+                weapon: signupData.weapon
+            });
+            alert('Account created! You can now login.');
+            setView('athlete-login');
+            setSignupData({ firstName: '', lastName: '', dob: '', gender: 'Male', weapon: 'Foil' });
+        } catch (error) {
+            alert('Failed to create account. Please try again.');
+        }
+    };
+
+    const handleParentSignUp = async (e) => {
+        e.preventDefault();
+        try {
+            if (parentData.linkExisting) {
+                // Link to existing child
+                const existingChild = athletes.find(a =>
+                    a.name.toLowerCase().includes(parentData.childName.toLowerCase()) &&
+                    a.dob === parentData.childDob
+                );
+                if (existingChild) {
+                    login('parent', existingChild.id);
+                    navigate('/parent');
+                } else {
+                    alert('Child not found. Please check the name and date of birth.');
+                }
+            } else {
+                // Create new child account
+                await addAthlete({
+                    name: parentData.childName,
+                    dob: parentData.childDob,
+                    gender: 'Male',
+                    weapon: 'Foil'
+                });
+                alert('Child account created! You can now login as parent.');
+                setView('parent-login');
+            }
+            setParentData({ parentName: '', parentEmail: '', childName: '', childDob: '', linkExisting: true });
+        } catch (error) {
+            alert('Failed to create account. Please try again.');
         }
     };
 
@@ -190,13 +258,21 @@ const Login = () => {
                         <User className="w-5 h-5 mr-2 text-emerald-600" />
                         Athlete Access
                     </h2>
-                    <p className="text-sm text-slate-500 mb-4">Click to login:</p>
-                    <button
-                        onClick={() => setView('athlete-login')}
-                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
-                    >
-                        Athlete Login
-                    </button>
+                    <p className="text-sm text-slate-500 mb-4">Click to login or sign up:</p>
+                    <div className="space-y-2">
+                        <button
+                            onClick={() => setView('athlete-login')}
+                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+                        >
+                            Athlete Login
+                        </button>
+                        <button
+                            onClick={() => setView('athlete-signup')}
+                            className="w-full py-3 bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-medium rounded-lg transition-colors"
+                        >
+                            Sign Up as Athlete
+                        </button>
+                    </div>
                 </div>
 
                 {view === 'athlete-login' && (
@@ -246,12 +322,20 @@ const Login = () => {
                         Parent Access
                     </h2>
                     <p className="text-sm text-slate-500 mb-4">View your child's progress:</p>
-                    <button
-                        onClick={() => setView('parent-login')}
-                        className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
-                    >
-                        Parent Login
-                    </button>
+                    <div className="space-y-2">
+                        <button
+                            onClick={() => setView('parent-login')}
+                            className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
+                        >
+                            Parent Login
+                        </button>
+                        <button
+                            onClick={() => setView('parent-signup')}
+                            className="w-full py-3 bg-white border-2 border-orange-600 text-orange-600 hover:bg-orange-50 font-medium rounded-lg transition-colors"
+                        >
+                            Sign Up as Parent
+                        </button>
+                    </div>
                 </div>
 
                 {view === 'parent-login' && (
@@ -289,6 +373,169 @@ const Login = () => {
                                     className="w-full py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700"
                                 >
                                     Sign In
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {view === 'athlete-signup' && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+                            <button onClick={() => { setView('main'); setSignupData({ firstName: '', lastName: '', dob: '', gender: 'Male', weapon: 'Foil' }); }} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
+                            <h2 className="text-xl font-bold text-slate-800 mb-4">Create Athlete Account</h2>
+                            <form onSubmit={handleAthleteSignUp} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Surname</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            placeholder="SMITH"
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
+                                            value={signupData.lastName}
+                                            onChange={e => setSignupData({ ...signupData, lastName: e.target.value.toUpperCase() })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            placeholder="John"
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            value={signupData.firstName}
+                                            onChange={e => setSignupData({ ...signupData, firstName: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
+                                    <input
+                                        required
+                                        type="date"
+                                        max={new Date().toISOString().split('T')[0]}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        value={signupData.dob}
+                                        onChange={e => setSignupData({ ...signupData, dob: e.target.value })}
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">This will be your password for login</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
+                                        <select
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            value={signupData.gender}
+                                            onChange={e => setSignupData({ ...signupData, gender: e.target.value })}
+                                        >
+                                            <option>Male</option>
+                                            <option>Female</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Weapon</label>
+                                        <select
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            value={signupData.weapon}
+                                            onChange={e => setSignupData({ ...signupData, weapon: e.target.value })}
+                                        >
+                                            <option>Foil</option>
+                                            <option>Epee</option>
+                                            <option>Sabre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700"
+                                >
+                                    Create Account
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {view === 'parent-signup' && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+                            <button onClick={() => { setView('main'); setParentData({ parentName: '', parentEmail: '', childName: '', childDob: '', linkExisting: true }); }} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
+                            <h2 className="text-xl font-bold text-slate-800 mb-4">Create Parent Account</h2>
+                            <form onSubmit={handleParentSignUp} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Your Name</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="Parent Name"
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        value={parentData.parentName}
+                                        onChange={e => setParentData({ ...parentData, parentName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Your Email (Optional)</label>
+                                    <input
+                                        type="email"
+                                        placeholder="parent@email.com"
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        value={parentData.parentEmail}
+                                        onChange={e => setParentData({ ...parentData, parentEmail: e.target.value })}
+                                    />
+                                </div>
+                                <div className="border-t pt-4">
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Child Information</label>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Child's Name</label>
+                                            <input
+                                                required
+                                                type="text"
+                                                placeholder="SMITH John"
+                                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                value={parentData.childName}
+                                                onChange={e => setParentData({ ...parentData, childName: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Child's Date of Birth</label>
+                                            <input
+                                                required
+                                                type="date"
+                                                max={new Date().toISOString().split('T')[0]}
+                                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                value={parentData.childDob}
+                                                onChange={e => setParentData({ ...parentData, childDob: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-lg">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            checked={parentData.linkExisting}
+                                            onChange={() => setParentData({ ...parentData, linkExisting: true })}
+                                            className="w-4 h-4 text-orange-600"
+                                        />
+                                        <span className="text-sm text-slate-700">Link to existing child account</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer mt-2">
+                                        <input
+                                            type="radio"
+                                            checked={!parentData.linkExisting}
+                                            onChange={() => setParentData({ ...parentData, linkExisting: false })}
+                                            className="w-4 h-4 text-orange-600"
+                                        />
+                                        <span className="text-sm text-slate-700">Create new child account</span>
+                                    </label>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700"
+                                >
+                                    {parentData.linkExisting ? 'Link & Sign In' : 'Create Account'}
                                 </button>
                             </form>
                         </div>
