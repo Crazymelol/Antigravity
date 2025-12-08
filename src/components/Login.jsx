@@ -6,13 +6,23 @@ import { Swords, User, ShieldCheck, Users } from 'lucide-react';
 const Login = () => {
     const { login, athletes, coaches, requestCoachAccess } = useApp();
     const navigate = useNavigate();
-    const [view, setView] = useState('main'); // main, coach-login, coach-register, admin
+    const [view, setView] = useState('main'); // main, coach-login, coach-register, admin, athlete-login, parent-login
     const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
+    const [coachPassword, setCoachPassword] = useState('');
+    const [selectedAthlete, setSelectedAthlete] = useState(null);
+    const [athleteDob, setAthleteDob] = useState('');
 
-    const handleCoachLogin = (coachId) => {
-        login('coach'); // In reality, we'd bind to the coach ID
-        navigate('/');
+    const handleCoachLogin = (e) => {
+        e.preventDefault();
+        // Default Head Coach password: "coach123" (change this in production)
+        if (coachPassword === 'coach123') {
+            login('coach');
+            navigate('/');
+        } else {
+            alert('Incorrect password');
+            setCoachPassword('');
+        }
     };
 
     const handleRegister = (e) => {
@@ -29,14 +39,28 @@ const Login = () => {
         navigate('/admin');
     };
 
-    const handleAthleteLogin = (athleteId) => {
-        login('athlete', athleteId);
-        navigate('/');
+    const handleAthleteLogin = (e) => {
+        e.preventDefault();
+        const athlete = athletes.find(a => a.id === selectedAthlete);
+        if (athlete && athlete.dob === athleteDob) {
+            login('athlete', selectedAthlete);
+            navigate('/');
+        } else {
+            alert('Incorrect date of birth');
+            setAthleteDob('');
+        }
     };
 
-    const handleParentLogin = (childId) => {
-        login('parent', childId);
-        navigate('/parent');
+    const handleParentLogin = (e) => {
+        e.preventDefault();
+        const athlete = athletes.find(a => a.id === selectedAthlete);
+        if (athlete && athlete.dob === athleteDob) {
+            login('parent', selectedAthlete);
+            navigate('/parent');
+        } else {
+            alert('Incorrect date of birth');
+            setAthleteDob('');
+        }
     };
 
     return (
@@ -84,19 +108,36 @@ const Login = () => {
                 {view === 'coach-login' && (
                     <div className="p-8">
                         <button onClick={() => setView('main')} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
-                        <h2 className="text-xl font-bold text-slate-800 mb-4">Select Coach Profile</h2>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {coaches.map(c => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => handleCoachLogin(c.id)}
-                                    className="w-full text-left px-4 py-3 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-colors font-medium text-slate-700 hover:text-indigo-700"
-                                >
-                                    {c.name}
-                                </button>
-                            ))}
-                            {coaches.length === 0 && <p className="text-sm text-slate-400 italic">No approved coaches yet.</p>}
-                        </div>
+                        <h2 className="text-xl font-bold text-slate-800 mb-4">Coach Login</h2>
+                        <form onSubmit={handleCoachLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Coach Name</label>
+                                <input
+                                    type="text"
+                                    value="Head Coach"
+                                    disabled
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                                <input
+                                    required
+                                    type="password"
+                                    placeholder="Enter password"
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    value={coachPassword}
+                                    onChange={e => setCoachPassword(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700"
+                            >
+                                Sign In
+                            </button>
+                            <p className="text-xs text-slate-400 text-center">Default password: coach123</p>
+                        </form>
                     </div>
                 )}
 
@@ -149,49 +190,110 @@ const Login = () => {
                         <User className="w-5 h-5 mr-2 text-emerald-600" />
                         Athlete Access
                     </h2>
-                    <p className="text-sm text-slate-500 mb-4">Select your profile to check in:</p>
-
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                        {athletes.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic">No athletes found. Ask a coach to add you.</p>
-                        ) : (
-                            athletes.map(a => (
-                                <button
-                                    key={a.id}
-                                    onClick={() => handleAthleteLogin(a.id)}
-                                    className="w-full text-left px-4 py-3 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded-lg transition-colors flex items-center justify-between group"
-                                >
-                                    <span className="font-medium text-slate-700 group-hover:text-emerald-700">{a.name}</span>
-                                    <span className="text-xs text-slate-400 uppercase">{a.weapon}</span>
-                                </button>
-                            ))
-                        )}
-                    </div>
+                    <p className="text-sm text-slate-500 mb-4">Click to login:</p>
+                    <button
+                        onClick={() => setView('athlete-login')}
+                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+                    >
+                        Athlete Login
+                    </button>
                 </div>
+
+                {view === 'athlete-login' && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-md p-6">
+                            <button onClick={() => { setView('main'); setSelectedAthlete(null); setAthleteDob(''); }} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
+                            <h2 className="text-xl font-bold text-slate-800 mb-4">Athlete Login</h2>
+                            <form onSubmit={handleAthleteLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Your Name</label>
+                                    <select
+                                        required
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        value={selectedAthlete || ''}
+                                        onChange={e => setSelectedAthlete(e.target.value)}
+                                    >
+                                        <option value="">Choose athlete...</option>
+                                        {athletes.map(a => (
+                                            <option key={a.id} value={a.id}>{a.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
+                                    <input
+                                        required
+                                        type="date"
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        value={athleteDob}
+                                        onChange={e => setAthleteDob(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700"
+                                >
+                                    Sign In
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 <div className="bg-orange-50 px-8 py-6 border-t border-orange-100">
                     <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
                         <Users className="w-5 h-5 mr-2 text-orange-600" />
                         Parent Access
                     </h2>
-                    <p className="text-sm text-slate-500 mb-4">Select your child to view progress:</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                        {athletes.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic">No athletes found.</p>
-                        ) : (
-                            athletes.map(a => (
-                                <button
-                                    key={`parent-${a.id}`}
-                                    onClick={() => handleParentLogin(a.id)}
-                                    className="w-full text-left px-4 py-3 bg-white hover:bg-orange-100 border border-orange-200 hover:border-orange-300 rounded-lg transition-colors flex items-center justify-between group"
-                                >
-                                    <span className="font-medium text-slate-700 group-hover:text-orange-800">{a.name}</span>
-                                    <span className="text-xs text-slate-400 uppercase">{a.weapon}</span>
-                                </button>
-                            ))
-                        )}
-                    </div>
+                    <p className="text-sm text-slate-500 mb-4">View your child's progress:</p>
+                    <button
+                        onClick={() => setView('parent-login')}
+                        className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
+                    >
+                        Parent Login
+                    </button>
                 </div>
+
+                {view === 'parent-login' && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-md p-6">
+                            <button onClick={() => { setView('main'); setSelectedAthlete(null); setAthleteDob(''); }} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
+                            <h2 className="text-xl font-bold text-slate-800 mb-4">Parent Login</h2>
+                            <form onSubmit={handleParentLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Your Child</label>
+                                    <select
+                                        required
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        value={selectedAthlete || ''}
+                                        onChange={e => setSelectedAthlete(e.target.value)}
+                                    >
+                                        <option value="">Choose child...</option>
+                                        {athletes.map(a => (
+                                            <option key={a.id} value={a.id}>{a.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Child's Date of Birth</label>
+                                    <input
+                                        required
+                                        type="date"
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        value={athleteDob}
+                                        onChange={e => setAthleteDob(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700"
+                                >
+                                    Sign In
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <p className="mt-8 text-sm text-slate-400">
