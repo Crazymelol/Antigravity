@@ -673,11 +673,6 @@ const Login = () => {
     );
 };
 
-<p className="mt-8 text-sm text-slate-400">
-    Note: This is a demo authentication system.
-</p>
-        </div >
-    );
-};
+
 
 export default Login;
