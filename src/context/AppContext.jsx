@@ -10,7 +10,8 @@ import {
     announcementsAPI,
     refereesAPI,
     inventoryAPI,
-    lessonBookingsAPI
+    lessonBookingsAPI,
+    coachesAPI
 } from '../lib/supabaseAPI';
 
 

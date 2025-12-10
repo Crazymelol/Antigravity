@@ -5,6 +5,38 @@ import { supabase, DEFAULT_CLUB_ID } from './supabase'
 // ============================================
 // COMPETITIONS API
 // ============================================
+// ============================================
+// COACHES API
+// ============================================
+export const coachesAPI = {
+    async register(coach) {
+        const { data, error } = await supabase
+            .from('coaches')
+            .insert([{ ...coach, club_id: DEFAULT_CLUB_ID }])
+            .select()
+            .single()
+        if (error) throw error
+        return data
+    },
+
+    async login(name, password) {
+        // Simple name/password check for now (in production use Supabase Auth)
+        const { data, error } = await supabase
+            .from('coaches')
+            .select('*')
+            .eq('club_id', DEFAULT_CLUB_ID)
+            .ilike('name', name) // Case insensitive name check
+            .eq('password', password)
+            .single()
+
+        if (error) return null
+        return data
+    }
+}
+
+// ============================================
+// COMPETITIONS API
+// ============================================
 export const competitionsAPI = {
     async getAll() {
         const { data, error } = await supabase

@@ -11,10 +11,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================
 CREATE TABLE clubs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  location TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- COACHES TABLE
+-- ============================================
+CREATE TABLE coaches (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  club_id UUID REFERENCES clubs(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  password TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ============================================
@@ -26,6 +36,11 @@ CREATE TABLE athletes (
   name TEXT NOT NULL,
   dob DATE NOT NULL,
   weapon TEXT NOT NULL CHECK (weapon IN ('Foil', 'Epee', 'Sabre')),
+  email TEXT,
+  phone TEXT,
+  parent_name TEXT,
+  parent_email TEXT,
+  parent_phone TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -199,4 +214,5 @@ CREATE POLICY "Allow all for development" ON announcements FOR ALL USING (true);
 CREATE POLICY "Allow all for development" ON referees FOR ALL USING (true);
 CREATE POLICY "Allow all for development" ON inventory FOR ALL USING (true);
 CREATE POLICY "Allow all for development" ON lesson_bookings FOR ALL USING (true);
+CREATE POLICY "Allow all for development" ON coaches FOR ALL USING (true);
 CREATE POLICY "Allow all for development" ON clubs FOR ALL USING (true);
