@@ -29,7 +29,7 @@ const AthleteForm = ({ onClose }) => {
 
     const getOphardtUrl = () => {
         const query = `${formData.lastName}+${formData.firstName}`;
-        return `https://fencing.ophardt.online/en/search/athletes?name=${query}`;
+        return `https://fencing.ophardt.online/en/search-results?q=${query}`;
     };
 
     return (
