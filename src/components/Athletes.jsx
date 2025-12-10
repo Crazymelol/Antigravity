@@ -12,13 +12,24 @@ const AthleteForm = ({ onClose }) => {
         gender: 'Male',
         weapon: 'Foil',
         dob: '',
+        email: '',
+        phone: '',
+        parentName: '',
+        parentEmail: '',
+        parentPhone: '',
         notes: ''
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
         const fullName = `${formData.lastName.toUpperCase()} ${formData.firstName}`;
-        addAthlete({ ...formData, name: fullName });
+        addAthlete({
+            ...formData,
+            name: fullName,
+            parent_name: formData.parentName,
+            parent_email: formData.parentEmail,
+            parent_phone: formData.parentPhone
+        });
         onClose();
     };
 
@@ -111,18 +122,78 @@ const AthleteForm = ({ onClose }) => {
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
-                        <textarea className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none h-24" placeholder="Medical conditions, experience level, etc." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} />
-                    </div>
-
-                    <div className="flex justify-end pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-50 font-medium rounded-lg mr-2">Cancel</button>
-                        <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm shadow-indigo-200 transition-colors">Add Athlete</button>
-                    </div>
-                </form>
             </div>
-        </div>
+
+            {/* Contact Information */}
+            <div className="border-t border-slate-100 pt-4 mt-2">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Contact Information</h3>
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
+                        <input
+                            type="email"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                            value={formData.email}
+                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
+                        <input
+                            type="tel"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                            value={formData.phone}
+                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <h3 className="text-sm font-semibold text-slate-800 mb-3 mt-4">Parent/Guardian</h3>
+                <div className="space-y-3">
+                    <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Name</label>
+                        <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                            value={formData.parentName}
+                            onChange={e => setFormData({ ...formData, parentName: e.target.value })}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
+                            <input
+                                type="email"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                value={formData.parentEmail}
+                                onChange={e => setFormData({ ...formData, parentEmail: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
+                            <input
+                                type="tel"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
+                                value={formData.parentPhone}
+                                onChange={e => setFormData({ ...formData, parentPhone: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
+                <textarea className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none h-24" placeholder="Medical conditions, experience level, etc." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} />
+            </div>
+
+            <div className="flex justify-end pt-4">
+                <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-50 font-medium rounded-lg mr-2">Cancel</button>
+                <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm shadow-indigo-200 transition-colors">Add Athlete</button>
+            </div>
+        </form>
+            </div >
+        </div >
     );
 };
 
