@@ -228,6 +228,7 @@ const Login = () => {
                                     type="text"
                                     placeholder="Enter your name"
                                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    value={coachLoginName}
                                     onChange={(e) => setCoachLoginName(e.target.value)}
                                 />
                             </div>
