@@ -12,7 +12,7 @@ const Login = () => {
     const [regEmail, setRegEmail] = useState('');
     const [regPhone, setRegPhone] = useState('');
     const [regPassword, setRegPassword] = useState('');
-    const [coachLoginName, setCoachLoginName] = useState('Head Coach');
+    const [coachLoginName, setCoachLoginName] = useState('');
     const [coachPassword, setCoachPassword] = useState('');
     const [selectedAthlete, setSelectedAthlete] = useState(null);
     const [athleteDob, setAthleteDob] = useState('');
@@ -43,25 +43,22 @@ const Login = () => {
 
         // Try database login first
         try {
-            const coach = await coachesAPI.login('Head Coach', coachPassword); // For now assuming name is 'Head Coach' or generic login?
-            // Wait, coach login needs NAME input too if we want multi-coach.
-            // But the UI only has Password input and hardcoded "Head Coach" name (line 185).
-            // Let's check if the password matches the hardcoded one OR generic db check?
-            // User requested "all people sign up", so meaningful coach login implies multiple coaches.
-            // I should ENABLE name input for Coach Login.
+            const coach = await coachesAPI.login(coachLoginName, coachPassword);
+            if (coach) {
+                login('coach');
+                navigate('/');
+                return;
+            }
         } catch (err) { }
 
-        // Default legacy check
-        if (coachPassword === 'coach123') {
+        // Strict legacy check (only allows specific Head Coach account)
+        if (coachLoginName === 'Head Coach' && coachPassword === 'coach123') {
             login('coach');
             navigate('/');
             return;
         }
 
-        // Check if any coach exists with this password (simple check for now)
-        // Ideally we change the UI to ask for Name + Password.
-        // Let's modify the UI first in the next steps. For now, keep generic check.
-        alert('Incorrect password');
+        alert('Incorrect details');
         setCoachPassword('');
     };
 
@@ -249,7 +246,7 @@ const Login = () => {
                             >
                                 Sign In
                             </button>
-                            <p className="text-xs text-slate-400 text-center">Default password: coach123</p>
+
                         </form>
                     </div>
                 )}
