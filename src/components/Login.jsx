@@ -14,6 +14,7 @@ const Login = () => {
     const [regPassword, setRegPassword] = useState('');
     const [coachLoginName, setCoachLoginName] = useState('');
     const [coachPassword, setCoachPassword] = useState('');
+    const [adminPassword, setAdminPassword] = useState('');
     const [selectedAthlete, setSelectedAthlete] = useState(null);
     const [athleteDob, setAthleteDob] = useState('');
 
@@ -90,9 +91,15 @@ const Login = () => {
         }
     };
 
-    const handleAdminLogin = () => {
-        login('admin');
-        navigate('/admin');
+    const handleAdminLogin = (e) => {
+        e.preventDefault();
+        if (adminPassword === 'admin123') {
+            login('admin');
+            navigate('/admin');
+        } else {
+            alert('Incorrect admin password');
+            setAdminPassword('');
+        }
     };
 
     const handleAthleteLogin = (e) => {
@@ -309,12 +316,25 @@ const Login = () => {
                     <div className="p-8">
                         <button onClick={() => setView('main')} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
                         <h2 className="text-xl font-bold text-slate-800 mb-4">Admin Login</h2>
-                        <button
-                            onClick={handleAdminLogin}
-                            className="w-full py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900"
-                        >
-                            Enter as Admin
-                        </button>
+                        <form onSubmit={handleAdminLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Admin Password</label>
+                                <input
+                                    required
+                                    type="password"
+                                    placeholder="Enter admin password"
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                                    value={adminPassword}
+                                    onChange={e => setAdminPassword(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-900"
+                            >
+                                Enter as Admin
+                            </button>
+                        </form>
                     </div>
                 )}
 
