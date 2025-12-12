@@ -12,7 +12,7 @@ export const coachesAPI = {
     async register(coach) {
         const { data, error } = await supabase
             .from('coaches')
-            .insert([{ ...coach, club_id: DEFAULT_CLUB_ID }])
+            .insert([{ ...coach, club_id: DEFAULT_CLUB_ID, status: 'pending' }])
             .select()
             .single()
         if (error) throw error
@@ -20,17 +20,62 @@ export const coachesAPI = {
     },
 
     async login(name, password) {
-        // Simple name/password check for now (in production use Supabase Auth)
         const { data, error } = await supabase
             .from('coaches')
             .select('*')
             .eq('club_id', DEFAULT_CLUB_ID)
-            .ilike('name', name) // Case insensitive name check
+            .ilike('name', name)
             .eq('password', password)
             .single()
 
-        if (error) return null
+        if (error) return { user: null, error: error.message }
+
+        if (data && data.status !== 'approved') {
+            return { user: null, error: 'pending' }
+        }
+
+        return { user: data, error: null }
+    },
+
+    async getPending() {
+        const { data, error } = await supabase
+            .from('coaches')
+            .select('*')
+            .eq('club_id', DEFAULT_CLUB_ID)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+        if (error) throw error
+        return data || []
+    },
+
+    async getApproved() {
+        const { data, error } = await supabase
+            .from('coaches')
+            .select('*')
+            .eq('club_id', DEFAULT_CLUB_ID)
+            .eq('status', 'approved')
+            .order('name')
+        if (error) throw error
+        return data || []
+    },
+
+    async approve(id) {
+        const { data, error } = await supabase
+            .from('coaches')
+            .update({ status: 'approved', approved_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single()
+        if (error) throw error
         return data
+    },
+
+    async decline(id) {
+        const { error } = await supabase
+            .from('coaches')
+            .delete()
+            .eq('id', id)
+        if (error) throw error
     }
 }
 

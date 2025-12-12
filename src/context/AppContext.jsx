@@ -92,28 +92,15 @@ export const AppProvider = ({ children }) => {
     const [inventory, setInventory] = useState([]);
     const [lessonBookings, setLessonBookings] = useState([]);
 
-    // Keep coaches local for now (auth not implemented yet)
-    const [coaches, setCoaches] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_coaches');
-            return saved ? JSON.parse(saved) : [
-                { id: 'default-coach', name: 'Head Coach', email: 'coach@club.com', approvedAt: new Date().toISOString() }
-            ];
-        } catch { return []; }
-    });
+    const [coaches, setCoaches] = useState([]);
 
-    const [pendingCoaches, setPendingCoaches] = useState(() => {
-        try {
-            const saved = localStorage.getItem('fencing_pendingCoaches');
-            return saved ? JSON.parse(saved) : [];
-        } catch { return []; }
-    });
+    const [pendingCoaches, setPendingCoaches] = useState([]);
 
     // Load all data from Supabase
     useEffect(() => {
         const loadAllData = async () => {
             try {
-                const [attendanceData, wellnessData, workloadData, statusData, announcementsData, refereesData, inventoryData, lessonsData] = await Promise.all([
+                const [attendanceData, wellnessData, workloadData, statusData, announcementsData, refereesData, inventoryData, lessonsData, coachesData, pendingCoachesData] = await Promise.all([
                     attendanceAPI.getAll(),
                     wellnessAPI.getAll(),
                     workloadAPI.getAll(),
@@ -121,7 +108,9 @@ export const AppProvider = ({ children }) => {
                     announcementsAPI.getAll(),
                     refereesAPI.getAll(),
                     inventoryAPI.getAll(),
-                    lessonBookingsAPI.getAll()
+                    lessonBookingsAPI.getAll(),
+                    coachesAPI.getApproved(),
+                    coachesAPI.getPending()
                 ]);
 
                 // Convert arrays to objects for attendance, wellness, workload, status
@@ -155,7 +144,10 @@ export const AppProvider = ({ children }) => {
                 setAnnouncements(announcementsData);
                 setReferees(refereesData);
                 setInventory(inventoryData);
+                setInventory(inventoryData);
                 setLessonBookings(lessonsData);
+                setCoaches(coachesData);
+                setPendingCoaches(pendingCoachesData);
             } catch (error) {
                 console.error('Failed to load data from Supabase:', error);
             }
@@ -171,8 +163,7 @@ export const AppProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('fencing_workload', JSON.stringify(workload)); }, [workload]);
     useEffect(() => { localStorage.setItem('fencing_athleteStatus', JSON.stringify(athleteStatus)); }, [athleteStatus]);
     useEffect(() => { localStorage.setItem('fencing_announcements', JSON.stringify(announcements)); }, [announcements]);
-    useEffect(() => { localStorage.setItem('fencing_coaches', JSON.stringify(coaches)); }, [coaches]);
-    useEffect(() => { localStorage.setItem('fencing_pendingCoaches', JSON.stringify(pendingCoaches)); }, [pendingCoaches]);
+    // Coaches are now remote-only
     useEffect(() => { localStorage.setItem('fencing_referees', JSON.stringify(referees)); }, [referees]);
     useEffect(() => { localStorage.setItem('fencing_inventory', JSON.stringify(inventory)); }, [inventory]);
     useEffect(() => { localStorage.setItem('fencing_lessonBookings', JSON.stringify(lessonBookings)); }, [lessonBookings]);
@@ -301,26 +292,23 @@ export const AppProvider = ({ children }) => {
     };
 
     // Coach Approval Actions
-    const requestCoachAccess = (name, email) => {
-        const newRequest = {
-            id: crypto.randomUUID(),
-            name,
-            email,
-            requestedAt: new Date().toISOString()
-        };
-        setPendingCoaches(prev => [...prev, newRequest]);
-    };
-
-    const approveCoach = (id) => {
-        const coach = pendingCoaches.find(c => c.id === id);
-        if (coach) {
-            setCoaches(prev => [...prev, { ...coach, approvedAt: new Date().toISOString() }]);
+    const approveCoach = async (id) => {
+        try {
+            const approved = await coachesAPI.approve(id);
+            setCoaches(prev => [approved, ...prev]);
             setPendingCoaches(prev => prev.filter(c => c.id !== id));
+        } catch (error) {
+            console.error('Failed to approve coach:', error);
         }
     };
 
-    const declineCoach = (id) => {
-        setPendingCoaches(prev => prev.filter(c => c.id !== id));
+    const declineCoach = async (id) => {
+        try {
+            await coachesAPI.decline(id);
+            setPendingCoaches(prev => prev.filter(c => c.id !== id));
+        } catch (error) {
+            console.error('Failed to decline coach:', error);
+        }
     };
 
     // Referee Management Actions
@@ -435,7 +423,7 @@ export const AppProvider = ({ children }) => {
             currentUser, login, logout,
             athleteStatus, updateAthleteStatus,
             announcements, addAnnouncement, removeAnnouncement,
-            coaches, pendingCoaches, requestCoachAccess, approveCoach, declineCoach,
+            coaches, pendingCoaches, approveCoach, declineCoach,
             referees, addReferee, updateReferee, removeReferee,
             inventory, addInventoryItem, updateInventoryItem, removeInventoryItem, assignEquipment, returnEquipment,
             lessonBookings, addLessonBooking, updateLessonBooking, cancelLessonBooking

@@ -42,14 +42,21 @@ const Login = () => {
         e.preventDefault();
 
         // Try database login first
+        // Try database login first
         try {
-            const coach = await coachesAPI.login(coachLoginName, coachPassword);
-            if (coach) {
+            const { user, error } = await coachesAPI.login(coachLoginName, coachPassword);
+
+            if (error === 'pending') {
+                alert('Your account is pending approval. Please contact the administrator or wait for activation.');
+                return;
+            }
+
+            if (user) {
                 login('coach');
                 navigate('/');
                 return;
             }
-        } catch (err) { }
+        } catch (err) { console.error(err); }
 
         // Strict legacy check (only allows specific Head Coach account)
         if (coachLoginName === 'Head Coach' && coachPassword === 'coach123') {
@@ -71,7 +78,7 @@ const Login = () => {
                 phone: regPhone,
                 password: regPassword
             });
-            alert('Coach account created! You can now login.');
+            alert('Request submitted! Please wait for admin approval before logging in.');
             setView('coach-login');
             setRegName('');
             setRegEmail('');
