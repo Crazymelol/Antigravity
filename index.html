@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
+    <title>ForceSector – Mental Performance Training</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d0d0d;
+            overflow: hidden;
+            /* Prevent scrolling on mobile */
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            touch-action: none;
+            /* Disable default touch actions */
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+    <!-- Load Phaser 3 via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.1/phaser.min.js"></script>
+</head>
+
+<body>
+    <div id="game-container"></div>
+    <script src="src/GameScene.js"></script>
+    <script src="src/main.js"></script>
+</body>
+
+</html>
