@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const AthleteForm = ({ onClose }) => {
     const { addAthlete } = useApp();
+    const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -39,158 +40,269 @@ const AthleteForm = ({ onClose }) => {
     };
 
     const getOphardtUrl = () => {
-        const query = `${formData.lastName}+${formData.firstName}`;
-        return `https://fencing.ophardt.online/en/search-results?q=${query}`;
+        return `https://fencing.ophardt.online/en/search-results?q=${formData.lastName}`;
     };
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in duration-200">
-                <div className="flex justify-between items-center mb-6">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in duration-200 mobile-wizard-container">
+                <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-slate-900">Add New Athlete</h2>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Surname</label>
-                            <input
-                                required
-                                type="text"
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase placeholder:normal-case"
-                                placeholder="GAULTIER"
-                                value={formData.lastName}
-                                onChange={e => setFormData({ ...formData, lastName: e.target.value.toUpperCase() })}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                            <input
-                                required
-                                type="text"
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                placeholder="Jean-Paul"
-                                value={formData.firstName}
-                                onChange={e => setFormData({ ...formData, firstName: e.target.value })}
-                            />
-                        </div>
-                    </div>
+                {/* Progress Bar */}
+                <div className="w-full bg-slate-100 h-1.5 rounded-full mb-6">
+                    <div
+                        className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${(step / 5) * 100}%` }}
+                    ></div>
+                </div>
 
-                    {(formData.lastName || formData.firstName) && (
-                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <span className="text-xs font-bold text-slate-500 uppercase block mb-2">Check Official Spelling</span>
-                            <div className="flex gap-2">
-                                <a href={getFieUrl()} target="_blank" rel="noreferrer" className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-blue-600 hover:border-blue-200 flex items-center justify-center gap-1 transition-colors">
-                                    <Globe className="w-3 h-3" /> FIE Database
-                                </a>
-                                <a href={getOphardtUrl()} target="_blank" rel="noreferrer" className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-indigo-600 hover:border-indigo-200 flex items-center justify-center gap-1 transition-colors">
-                                    <Search className="w-3 h-3" /> Ophardt
-                                </a>
+                <form onSubmit={handleSubmit} className="space-y-6">
+
+                    {/* STEP 1: GENDER */}
+                    {step === 1 && (
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-slate-700 text-center">Select Gender</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {['Male', 'Female'].map((g) => (
+                                    <button
+                                        key={g}
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData({ ...formData, gender: g });
+                                            setStep(2);
+                                        }}
+                                        className={`py-8 rounded-xl border-2 font-bold text-lg transition-all ${formData.gender === g
+                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                : 'border-slate-200 hover:border-indigo-200 text-slate-600'
+                                            }`}
+                                    >
+                                        {g}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-1">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
-                            <select className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white" value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}>
-                                <option>Male</option>
-                                <option>Female</option>
-                            </select>
+                    {/* STEP 2: WEAPON */}
+                    {step === 2 && (
+                        <div className="space-y-4">
+                            <button
+                                type="button"
+                                onClick={() => setStep(1)}
+                                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                            >
+                                ← Back
+                            </button>
+                            <h3 className="text-lg font-semibold text-slate-700 text-center">Select Weapon</h3>
+                            <div className="space-y-3">
+                                {['Foil', 'Epee', 'Sabre'].map((w) => (
+                                    <button
+                                        key={w}
+                                        type="button"
+                                        onClick={() => {
+                                            setFormData({ ...formData, weapon: w });
+                                            setStep(3);
+                                        }}
+                                        className={`w-full py-4 px-6 rounded-xl border-2 font-bold text-lg text-left transition-all ${formData.weapon === w
+                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                : 'border-slate-200 hover:border-indigo-200 text-slate-600'
+                                            }`}
+                                    >
+                                        {w}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="col-span-1">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Weapon</label>
-                            <select className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white" value={formData.weapon} onChange={e => setFormData({ ...formData, weapon: e.target.value })}>
-                                <option>Foil</option>
-                                <option>Epee</option>
-                                <option>Sabre</option>
-                            </select>
-                        </div>
-                        <div className="col-span-1">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
+                    )}
+
+                    {/* STEP 3: DOB */}
+                    {step === 3 && (
+                        <div className="space-y-4">
+                            <button
+                                type="button"
+                                onClick={() => setStep(2)}
+                                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                            >
+                                ← Back
+                            </button>
+                            <h3 className="text-lg font-semibold text-slate-700 text-center">Date of Birth</h3>
                             <input
                                 required
                                 type="date"
                                 max={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-3 text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-center"
                                 value={formData.dob}
                                 onChange={e => setFormData({ ...formData, dob: e.target.value })}
                             />
+                            <button
+                                type="button"
+                                disabled={!formData.dob}
+                                onClick={() => setStep(4)}
+                                className="w-full py-3 bg-indigo-600 disabled:opacity-50 text-white font-bold rounded-xl hover:bg-indigo-700 mt-4"
+                            >
+                                Next
+                            </button>
                         </div>
-                    </div>
+                    )}
 
-
-
-                    {/* Contact Information */}
-                    <div className="border-t border-slate-100 pt-4 mt-2">
-                        <h3 className="text-sm font-semibold text-slate-800 mb-3">Contact Information</h3>
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                    value={formData.email}
-                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
-                                <input
-                                    type="tel"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                    value={formData.phone}
-                                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <h3 className="text-sm font-semibold text-slate-800 mb-3 mt-4">Parent/Guardian</h3>
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-700 mb-1">Name</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                    value={formData.parentName}
-                                    onChange={e => setFormData({ ...formData, parentName: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                    {/* STEP 4: NAME */}
+                    {step === 4 && (
+                        <div className="space-y-4">
+                            <button
+                                type="button"
+                                onClick={() => setStep(3)}
+                                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                            >
+                                ← Back
+                            </button>
+                            <h3 className="text-lg font-semibold text-slate-700 text-center">Athlete Name</h3>
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
+                                    <label className="block text-sm font-medium text-slate-500 mb-1 uppercase tracking-wide">Surname</label>
                                     <input
-                                        type="email"
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                        value={formData.parentEmail}
-                                        onChange={e => setFormData({ ...formData, parentEmail: e.target.value })}
+                                        required
+                                        autoFocus
+                                        type="text"
+                                        placeholder="SMITH"
+                                        className="w-full px-4 py-3 text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 uppercase"
+                                        value={formData.lastName}
+                                        onChange={e => setFormData({ ...formData, lastName: e.target.value.toUpperCase() })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
+                                    <label className="block text-sm font-medium text-slate-500 mb-1 uppercase tracking-wide">First Name</label>
                                     <input
-                                        type="tel"
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm"
-                                        value={formData.parentPhone}
-                                        onChange={e => setFormData({ ...formData, parentPhone: e.target.value })}
+                                        required
+                                        type="text"
+                                        placeholder="John"
+                                        className="w-full px-4 py-3 text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+                                        value={formData.firstName}
+                                        onChange={e => setFormData({ ...formData, firstName: e.target.value })}
                                     />
                                 </div>
                             </div>
+                            <button
+                                type="button"
+                                disabled={!formData.firstName || !formData.lastName}
+                                onClick={() => setStep(5)}
+                                className="w-full py-3 bg-indigo-600 disabled:opacity-50 text-white font-bold rounded-xl hover:bg-indigo-700 mt-4"
+                            >
+                                Next
+                            </button>
                         </div>
-                    </div>
+                    )}
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
-                        <textarea className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none h-24" placeholder="Medical conditions, experience level, etc." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} />
-                    </div>
+                    {/* STEP 5: DETAILS & REVIEW */}
+                    {step === 5 && (
+                        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                            <button
+                                type="button"
+                                onClick={() => setStep(4)}
+                                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                            >
+                                ← Back
+                            </button>
 
-                    <div className="flex justify-end pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-50 font-medium rounded-lg mr-2">Cancel</button>
-                        <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm shadow-indigo-200 transition-colors">Add Athlete</button>
-                    </div>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                                <h3 className="text-xl font-bold text-slate-800 mb-1">
+                                    {formData.lastName} {formData.firstName}
+                                </h3>
+                                <p className="text-slate-500 mb-3">{formData.gender} • {formData.weapon} • {new Date(formData.dob).getFullYear()}</p>
+
+                                <div className="flex gap-2 justify-center">
+                                    <a
+                                        href={getFieUrl()}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 flex items-center gap-1"
+                                    >
+                                        <Globe className="w-3 h-3" /> FIE
+                                    </a>
+                                    <a
+                                        href={getOphardtUrl()}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 flex items-center gap-1"
+                                    >
+                                        <Search className="w-3 h-3" /> OPHARDT
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-2">Contact Info</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input
+                                            type="email"
+                                            placeholder="Email"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        />
+                                        <input
+                                            type="tel"
+                                            placeholder="Phone"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            value={formData.phone}
+                                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-2">Parent/Guardian</h4>
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Parent Name"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            value={formData.parentName}
+                                            onChange={e => setFormData({ ...formData, parentName: e.target.value })}
+                                        />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <input
+                                                type="email"
+                                                placeholder="Parent Email"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                value={formData.parentEmail}
+                                                onChange={e => setFormData({ ...formData, parentEmail: e.target.value })}
+                                            />
+                                            <input
+                                                type="tel"
+                                                placeholder="Parent Phone"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                value={formData.parentPhone}
+                                                onChange={e => setFormData({ ...formData, parentPhone: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-2">Notes</h4>
+                                    <textarea
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 h-20 resize-none"
+                                        placeholder="Medical conditions, experience level, etc."
+                                        value={formData.notes}
+                                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200"
+                            >
+                                Confirm & Add Athlete
+                            </button>
+                        </div>
+                    )}
                 </form>
             </div >
         </div >
