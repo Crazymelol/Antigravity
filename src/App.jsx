@@ -17,6 +17,7 @@ import LessonBooking from './components/LessonBooking';
 import AthleteSchedule from './components/AthleteSchedule';
 import BadgeGenerator from './components/BadgeGenerator';
 import StripView from './components/StripView';
+import Rankings from './components/Rankings';
 
 const ProtectedRoute = ({ children }) => {
   const { currentUser } = useApp();
@@ -68,6 +69,7 @@ function AppRoutes() {
         <Route path="schedule" element={<AthleteSchedule />} />
         <Route path="badges" element={<BadgeGenerator />} />
         <Route path="strips" element={<StripView />} />
+        <Route path="rankings" element={<Rankings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

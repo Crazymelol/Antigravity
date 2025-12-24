@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Users, ClipboardCheck, LayoutDashboard, Swords, LogOut, Shield, QrCode, Package, BookOpen, CreditCard, Monitor } from 'lucide-react';
+import { Users, ClipboardCheck, LayoutDashboard, Swords, LogOut, Shield, QrCode, Package, BookOpen, CreditCard, Monitor, Trophy } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Layout = () => {
@@ -31,6 +31,7 @@ const Layout = () => {
             { to: '/badges', icon: CreditCard, label: 'Badges' },
             { to: '/strips', icon: Monitor, label: 'Strip View' },
             { to: '/referees', icon: Shield, label: 'Referees' },
+            { to: '/rankings', icon: Trophy, label: 'Rankings' },
         ];
     };
 
