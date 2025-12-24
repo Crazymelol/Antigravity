@@ -407,6 +407,53 @@ const AthleteProfileModal = ({ athlete, initialTab = 'overview', onClose }) => {
                     {/* OVERVIEW TAB */}
                     {activeTab === 'overview' && (
                         <div className="space-y-8 max-w-xl">
+                            {/* Competition Eligibility Card */}
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-amber-500" />
+                                    Competitive Status
+                                </h3>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -mr-16 -mt-16 opacity-50"></div>
+
+                                    {athlete.name.toUpperCase().includes('NOTARAS') ? (
+                                        <div className="relative">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Main Category</p>
+                                                    <div className="text-3xl font-black text-slate-800 flex items-baseline gap-2">
+                                                        U13 <span className="text-lg font-medium text-slate-500">Sabre</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Rank</p>
+                                                    <div className="text-4xl font-black text-indigo-600">#4</div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Eligible Competitions</p>
+                                                <div className="flex gap-2">
+                                                    {['U13', 'U14'].map(cat => (
+                                                        <span key={cat} className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-sm border border-indigo-100">
+                                                            {cat}
+                                                        </span>
+                                                    ))}
+                                                    <span className="px-3 py-1 bg-slate-50 text-slate-500 font-bold rounded-lg text-sm border border-slate-100">
+                                                        U17 (Upgraded)
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="relative text-center py-6">
+                                            <p className="text-slate-400 text-sm mb-2">No official ranking data linked.</p>
+                                            <button className="text-indigo-600 font-bold text-sm hover:underline">Link Official Profile</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                                     <Activity className="w-5 h-5 text-emerald-500" />
