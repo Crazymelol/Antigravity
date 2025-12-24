@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { coachesAPI } from '../lib/supabaseAPI';
 import { useNavigate } from 'react-router-dom';
-import { Swords, User, ShieldCheck, Users, Globe, Search } from 'lucide-react';
+import { Swords, User, ShieldCheck, Users, Globe, Search, ChevronLeft } from 'lucide-react';
 
 const Login = () => {
     const { login, athletes, addAthlete } = useApp();
     const navigate = useNavigate();
     const [view, setView] = useState('main'); // main, coach-login, coach-register, admin, athlete-login, parent-login, athlete-signup, parent-signup
+    const [signupStep, setSignupStep] = useState(1);
     const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [regPhone, setRegPhone] = useState('');
@@ -467,124 +468,200 @@ const Login = () => {
                 {view === 'athlete-signup' && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-                            <button onClick={() => { setView('main'); setSignupData({ firstName: '', lastName: '', dob: '', gender: 'Male', weapon: 'Foil' }); }} className="text-sm text-slate-400 mb-4 hover:text-slate-600">&larr; Back</button>
-                            <h2 className="text-xl font-bold text-slate-800 mb-4">Create Athlete Account</h2>
-                            <form onSubmit={handleAthleteSignUp} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Surname</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            placeholder="SMITH"
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
-                                            value={signupData.lastName}
-                                            onChange={e => setSignupData({ ...signupData, lastName: e.target.value.toUpperCase() })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            placeholder="John"
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            value={signupData.firstName}
-                                            onChange={e => setSignupData({ ...signupData, firstName: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
+                            <button
+                                onClick={() => {
+                                    if (signupStep > 1) {
+                                        setSignupStep(signupStep - 1);
+                                    } else {
+                                        setView('main');
+                                        setSignupStep(1);
+                                        setSignupData({ firstName: '', lastName: '', dob: '', gender: 'Male', weapon: 'Foil', email: '', phone: '' });
+                                    }
+                                }}
+                                className="text-sm text-slate-400 mb-4 hover:text-slate-600 flex items-center gap-1"
+                            >
+                                <ChevronLeft className="w-4 h-4" /> Back
+                            </button>
 
-                                {(signupData.lastName || signupData.firstName) && (
-                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                        <span className="text-xs font-bold text-slate-500 uppercase block mb-2">Check Official Spelling</span>
-                                        <div className="flex gap-2">
-                                            <a
-                                                href={`https://fie.org/athletes?name=${signupData.lastName}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-blue-600 hover:border-blue-200 flex items-center justify-center gap-1 transition-colors"
-                                            >
-                                                <Globe className="w-3 h-3" /> FIE Database
-                                            </a>
-                                            <a
-                                                href={`https://fencing.ophardt.online/en/search-results?q=${signupData.lastName}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-indigo-600 hover:border-indigo-200 flex items-center justify-center gap-1 transition-colors"
-                                            >
-                                                <Search className="w-3 h-3" /> Ophardt
-                                            </a>
+                            <h2 className="text-xl font-bold text-slate-800 mb-2">Create Athlete Account</h2>
+
+                            {/* Progress Bar */}
+                            <div className="w-full bg-slate-100 h-1.5 rounded-full mb-6">
+                                <div
+                                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300"
+                                    style={{ width: `${(signupStep / 5) * 100}%` }}
+                                ></div>
+                            </div>
+
+                            <form onSubmit={handleAthleteSignUp} className="space-y-6">
+
+                                {/* STEP 1: GENDER */}
+                                {signupStep === 1 && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-slate-700 text-center">Select Gender</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {['Male', 'Female'].map((g) => (
+                                                <button
+                                                    key={g}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSignupData({ ...signupData, gender: g });
+                                                        setSignupStep(2);
+                                                    }}
+                                                    className={`py-8 rounded-xl border-2 font-bold text-lg transition-all ${signupData.gender === g
+                                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm'
+                                                        : 'border-slate-200 hover:border-emerald-200 text-slate-600'
+                                                        }`}
+                                                >
+                                                    {g}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                                        <input
-                                            type="email"
-                                            placeholder="athlete@example.com"
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            value={signupData.email}
-                                            onChange={e => setSignupData({ ...signupData, email: e.target.value })}
-                                        />
+                                {/* STEP 2: WEAPON */}
+                                {signupStep === 2 && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-slate-700 text-center">Select Weapon</h3>
+                                        <div className="space-y-3">
+                                            {['Foil', 'Epee', 'Sabre'].map((w) => (
+                                                <button
+                                                    key={w}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSignupData({ ...signupData, weapon: w });
+                                                        setSignupStep(3);
+                                                    }}
+                                                    className={`w-full py-4 px-6 rounded-xl border-2 font-bold text-lg text-left transition-all ${signupData.weapon === w
+                                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm'
+                                                        : 'border-slate-200 hover:border-emerald-200 text-slate-600'
+                                                        }`}
+                                                >
+                                                    {w}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                                        <input
-                                            type="tel"
-                                            placeholder="+1 234 567 890"
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            value={signupData.phone}
-                                            onChange={e => setSignupData({ ...signupData, phone: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
+                                )}
 
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
-                                    <input
-                                        required
-                                        type="date"
-                                        max={new Date().toISOString().split('T')[0]}
-                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        value={signupData.dob}
-                                        onChange={e => setSignupData({ ...signupData, dob: e.target.value })}
-                                    />
-                                    <p className="text-xs text-slate-400 mt-1">This will be your password for login</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
-                                        <select
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            value={signupData.gender}
-                                            onChange={e => setSignupData({ ...signupData, gender: e.target.value })}
+                                {/* STEP 3: DOB */}
+                                {signupStep === 3 && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-slate-700 text-center">Date of Birth</h3>
+                                        <input
+                                            required
+                                            type="date"
+                                            max={new Date().toISOString().split('T')[0]}
+                                            className="w-full px-4 py-3 text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-center"
+                                            value={signupData.dob}
+                                            onChange={e => setSignupData({ ...signupData, dob: e.target.value })}
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={!signupData.dob}
+                                            onClick={() => setSignupStep(4)}
+                                            className="w-full py-3 bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-xl hover:bg-emerald-700 mt-4"
                                         >
-                                            <option>Male</option>
-                                            <option>Female</option>
-                                        </select>
+                                            Next
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Weapon</label>
-                                        <select
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            value={signupData.weapon}
-                                            onChange={e => setSignupData({ ...signupData, weapon: e.target.value })}
+                                )}
+
+                                {/* STEP 4: NAME */}
+                                {signupStep === 4 && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-slate-700 text-center">Your Name</h3>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-500 mb-1 uppercase tracking-wide">Surname</label>
+                                                <input
+                                                    required
+                                                    autoFocus
+                                                    type="text"
+                                                    placeholder="SMITH"
+                                                    className="w-full px-4 py-3 text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 uppercase"
+                                                    value={signupData.lastName}
+                                                    onChange={e => setSignupData({ ...signupData, lastName: e.target.value.toUpperCase() })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-500 mb-1 uppercase tracking-wide">First Name</label>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    placeholder="John"
+                                                    className="w-full px-4 py-3 text-lg border-2 border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500"
+                                                    value={signupData.firstName}
+                                                    onChange={e => setSignupData({ ...signupData, firstName: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            disabled={!signupData.firstName || !signupData.lastName}
+                                            onClick={() => setSignupStep(5)}
+                                            className="w-full py-3 bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-xl hover:bg-emerald-700 mt-4"
                                         >
-                                            <option>Foil</option>
-                                            <option>Epee</option>
-                                            <option>Sabre</option>
-                                        </select>
+                                            Next
+                                        </button>
                                     </div>
-                                </div>
-                                <button
-                                    type="submit"
-                                    className="w-full py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700"
-                                >
-                                    Create Account
-                                </button>
+                                )}
+
+                                {/* STEP 5: REVIEW */}
+                                {signupStep === 5 && (
+                                    <div className="space-y-6">
+                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                                            <h3 className="text-xl font-bold text-slate-800 mb-1">
+                                                {signupData.lastName} {signupData.firstName}
+                                            </h3>
+                                            <p className="text-slate-500 mb-3">{signupData.gender} • {signupData.weapon} • {new Date(signupData.dob).getFullYear()}</p>
+
+                                            <div className="flex gap-2 justify-center">
+                                                <a
+                                                    href={`https://fie.org/athletes?name=${signupData.lastName}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 flex items-center gap-1"
+                                                >
+                                                    <Globe className="w-3 h-3" /> FIE
+                                                </a>
+                                                <a
+                                                    href={`https://fencing.ophardt.online/en/search-results?q=${signupData.lastName}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 flex items-center gap-1"
+                                                >
+                                                    <Search className="w-3 h-3" /> OPHARDT
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3 pt-2">
+                                            <input
+                                                type="email"
+                                                placeholder="Email (Optional)"
+                                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                value={signupData.email}
+                                                onChange={e => setSignupData({ ...signupData, email: e.target.value })}
+                                            />
+                                            <input
+                                                type="tel"
+                                                placeholder="Phone (Optional)"
+                                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                value={signupData.phone}
+                                                onChange={e => setSignupData({ ...signupData, phone: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-200"
+                                        >
+                                            Create Account
+                                        </button>
+                                    </div>
+                                )}
                             </form>
                         </div>
                     </div>
