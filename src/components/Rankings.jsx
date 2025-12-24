@@ -10,7 +10,7 @@ const Rankings = () => {
         { id: '113792', url: 'https://fencing.ophardt.online/en/show-ranking/html/113792', label: 'Hellenic Ranking List 5', category: 'General' },
         { id: '113285', url: 'https://fencing.ophardt.online/en/show-ranking/html/113285', label: 'Hellenic Ranking List 6', category: 'General' },
         { id: '113283', url: 'https://fencing.ophardt.online/en/show-ranking/html/113283', label: 'Hellenic Ranking List 7', category: 'General' },
-        { id: '114109', url: 'https://fencing.ophardt.online/en/show-ranking/html/114109', label: 'Hellenic Ranking List 8', category: 'General' },
+        { id: '114109', url: 'https://fencing.ophardt.online/en/show-ranking/html/114109', label: "Women's Sabre U20 (2025)", category: 'Sabre' },
     ];
 
     return (
