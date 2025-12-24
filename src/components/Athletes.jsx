@@ -40,7 +40,7 @@ const AthleteForm = ({ onClose }) => {
     };
 
     const getOphardtUrl = () => {
-        return `https://fencing.ophardt.online/en/search-results?q=${formData.lastName}`;
+        return `https://fencing.ophardt.online/en/search/biographies?search=${formData.lastName}`;
     };
 
     return (
@@ -77,8 +77,8 @@ const AthleteForm = ({ onClose }) => {
                                             setStep(2);
                                         }}
                                         className={`py-8 rounded-xl border-2 font-bold text-lg transition-all ${formData.gender === g
-                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
-                                                : 'border-slate-200 hover:border-indigo-200 text-slate-600'
+                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                            : 'border-slate-200 hover:border-indigo-200 text-slate-600'
                                             }`}
                                     >
                                         {g}
@@ -109,8 +109,8 @@ const AthleteForm = ({ onClose }) => {
                                             setStep(3);
                                         }}
                                         className={`w-full py-4 px-6 rounded-xl border-2 font-bold text-lg text-left transition-all ${formData.weapon === w
-                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
-                                                : 'border-slate-200 hover:border-indigo-200 text-slate-600'
+                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                            : 'border-slate-200 hover:border-indigo-200 text-slate-600'
                                             }`}
                                     >
                                         {w}
@@ -227,7 +227,7 @@ const AthleteForm = ({ onClose }) => {
                                         href={getOphardtUrl()}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 flex items-center gap-1"
+                                        className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-indigo-600 hover:border-indigo-200 flex items-center justify-center gap-1 transition-colors"
                                     >
                                         <Search className="w-3 h-3" /> OPHARDT
                                     </a>

@@ -627,7 +627,7 @@ const Login = () => {
                                                     <Globe className="w-3 h-3" /> FIE
                                                 </a>
                                                 <a
-                                                    href={`https://fencing.ophardt.online/en/search-results?q=${signupData.lastName}`}
+                                                    href={`https://fencing.ophardt.online/en/search/biographies?search=${signupData.lastName}`}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 flex items-center gap-1"
