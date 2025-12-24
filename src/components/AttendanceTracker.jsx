@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ChevronLeft, ChevronRight, Check, MapPin, Megaphone, AlertTriangle, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, MapPin, Megaphone, AlertTriangle, Info, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 import WellnessForm from './WellnessForm';
 import WorkloadForm from './WorkloadForm';
@@ -77,7 +77,7 @@ const AthleteAttendanceView = () => {
 
                 {/* Progress Indicators */}
                 <div className="flex gap-2">
-                    {steps.map((step, idx) => (
+                    {steps.map((step) => (
                         <div key={step.id} className="flex-1">
                             <div className={clsx(
                                 "h-1.5 rounded-full transition-all duration-300 mb-1",
@@ -196,19 +196,46 @@ const AttendanceTracker = () => {
                 </div>
 
                 {/* Date Controls */}
-                <div className="flex items-center bg-white border border-slate-200 p-1 rounded-xl shadow-sm">
-                    <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
-                        <ChevronLeft className="w-5 h-5" />
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            const rows = [['Date', 'Athlete Name', 'Weapon', 'Status']];
+                            sortedAthletes.forEach(a => {
+                                const status = presentList.includes(a.id) ? 'Present' : 'Absent';
+                                rows.push([date, a.name, a.weapon, status]);
+                            });
+
+                            const csvContent = "data:text/csv;charset=utf-8,"
+                                + rows.map(e => e.join(",")).join("\n");
+
+                            const encodedUri = encodeURI(csvContent);
+                            const link = document.createElement("a");
+                            link.setAttribute("href", encodedUri);
+                            link.setAttribute("download", `attendance_${date}.csv`);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-colors font-medium border border-indigo-200"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export CSV</span>
                     </button>
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={e => setDate(e.target.value)}
-                        className="mx-2 font-medium text-slate-700 focus:outline-none bg-transparent"
-                    />
-                    <button onClick={() => handleDateChange(1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
+
+                    <div className="flex items-center bg-white border border-slate-200 p-1 rounded-xl shadow-sm">
+                        <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={e => setDate(e.target.value)}
+                            className="mx-2 font-medium text-slate-700 focus:outline-none bg-transparent"
+                        />
+                        <button onClick={() => handleDateChange(1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
