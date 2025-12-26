@@ -1,0 +1,9 @@
+{
+    "name": "forcesector",
+    "version": "1.0.0",
+    "description": "Cyberpunk Skill Game",
+    "private": true,
+    "scripts": {
+        "build": "echo 'Static Site - No Build Required'"
+    }
+}

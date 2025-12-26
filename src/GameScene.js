@@ -1,8 +1,24 @@
 const DAILY_LIMIT = 1;
 
-class GameScene extends Phaser.Scene {
+import SoundManager from '/src/SoundManager.js';
+import CampaignManager from '/src/CampaignManager.js';
+import SecurityManager from '/src/SecurityManager.js';
+
+export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
+        this.soundManager = new SoundManager();
+        this.campaignManager = new CampaignManager();
+        this.securityManager = new SecurityManager();
+    }
+
+    init(data) {
+        this.gameMode = data.mode || 'standard'; // 'standard', 'endurance', 'speed'
+    }
+
+    preload() {
+        // Ensure fonts are available (they are loaded in CSS, but this is a double-check if we used assets)
+        // No assets to load, but we will use the new font families
     }
 
     preload() {
@@ -12,7 +28,8 @@ class GameScene extends Phaser.Scene {
     create() {
         // --- Access Control Logic ---
         this.sessionRegistered = false;
-        this.isProUser = localStorage.getItem("forcesector_pro") === "true";
+        // Use global checker if available, else fallback (backward compatibility during dev)
+        this.isProUser = window.checkProStatus ? window.checkProStatus() : localStorage.getItem("forcesector_pro") === "true";
 
         const today = new Date().toDateString();
         const lastPlayDate = localStorage.getItem("forcesector_last_date");
@@ -24,8 +41,13 @@ class GameScene extends Phaser.Scene {
             localStorage.setItem("forcesector_last_date", today);
         }
 
-        if (!this.isProUser && sessionsToday >= DAILY_LIMIT) {
-            this.showLockedScreen();
+        const isLoggedIn = window.authManager && window.authManager.isAuthenticated();
+        const limit = isLoggedIn ? 3 : 1;
+        // Pro users have no limit
+        const dailyCap = this.isProUser ? 999 : limit;
+
+        if (sessionsToday >= dailyCap) {
+            this.showLockedScreen(isLoggedIn);
             return;
         }
 
@@ -51,6 +73,9 @@ class GameScene extends Phaser.Scene {
             accent: 0x00CCFF // Blue
         };
 
+        // --- Visuals ---
+        this.createParticles();
+
         // --- UI Layers ---
         this.createUI();
 
@@ -61,7 +86,65 @@ class GameScene extends Phaser.Scene {
         this.showStartScreen();
     }
 
+    createParticles() {
+        // Create a particle manager
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillCircle(4, 4, 4);
+        graphics.generateTexture('particle', 8, 8);
+
+        // Explosion Emitter
+        this.emitter = this.add.particles(0, 0, 'particle', {
+            speed: { min: 100, max: 400 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 800,
+            gravityY: 0,
+            blendMode: 'ADD',
+            emitting: false
+        });
+        this.emitter.setDepth(15);
+    }
+
+    createGridBackground() {
+        // Create a scrolling grid texture
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        const gridGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        gridGraphics.lineStyle(1, 0x00CCFF, 0.2);
+
+        // Draw grid lines
+        const gridSize = 40;
+        for (let x = 0; x <= width; x += gridSize) {
+            gridGraphics.moveTo(x, 0);
+            gridGraphics.lineTo(x, height);
+        }
+        for (let y = 0; y <= height; y += gridSize) {
+            gridGraphics.moveTo(0, y);
+            gridGraphics.lineTo(width, y);
+        }
+        gridGraphics.strokePath();
+        gridGraphics.generateTexture('grid', width, height);
+
+        // Add 2 tiles for scrolling effect
+        this.bgGrid1 = this.add.image(width / 2, height / 2, 'grid').setAlpha(0.3).setDepth(0);
+        this.bgGrid2 = this.add.image(width / 2, height / 2 - height, 'grid').setAlpha(0.3).setDepth(0);
+    }
+
+    update() {
+        // Scroll Grid
+        if (this.bgGrid1 && this.bgGrid2) {
+            this.bgGrid1.y += 0.5;
+            this.bgGrid2.y += 0.5;
+
+            if (this.bgGrid1.y >= this.scale.height * 1.5) this.bgGrid1.y = -this.scale.height / 2;
+            if (this.bgGrid2.y >= this.scale.height * 1.5) this.bgGrid2.y = -this.scale.height / 2;
+        }
+    }
+
     createUI() {
+        this.createGridBackground(); // Init grid
         const width = this.scale.width;
 
         // Header Background
@@ -70,9 +153,14 @@ class GameScene extends Phaser.Scene {
         // Title
         this.add.text(width / 2, 40, 'FORCESECTOR', {
             fontSize: '32px',
-            fontFamily: 'Arial',
+            fontFamily: '"Orbitron", sans-serif',
             fontWeight: 'bold',
             color: this.colors.text
+        }).setOrigin(0.5).setDepth(11).setShadow(0, 0, '#00CCFF', 10);
+
+        // Subtitle Mode Display
+        this.add.text(width / 2, 85, this.gameMode.toUpperCase() + (this.gameMode === 'campaign' ? ` - LEVEL ${this.levelConfig.id}` : " MODE"), {
+            fontSize: '18px', fontFamily: '"Rajdhani", sans-serif', color: '#00CCFF'
         }).setOrigin(0.5).setDepth(11);
 
         // HUD Container
@@ -80,15 +168,15 @@ class GameScene extends Phaser.Scene {
 
         // Timer
         this.timerText = this.add.text(40, 90, 'TIME: 120', {
-            fontSize: '24px',
-            fontFamily: 'monospace',
+            fontSize: '28px',
+            fontFamily: '"Orbitron", monospace',
             color: this.colors.text
         }).setOrigin(0, 0.5);
 
         // Score
         this.scoreText = this.add.text(width - 40, 90, 'SCORE: 0', {
-            fontSize: '24px',
-            fontFamily: 'monospace',
+            fontSize: '28px',
+            fontFamily: '"Orbitron", monospace',
             color: this.colors.text
         }).setOrigin(1, 0.5);
 
@@ -102,7 +190,7 @@ class GameScene extends Phaser.Scene {
 
         this.startContainer = this.add.container(0, 0).setDepth(20);
 
-        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8); // Slightly richer bg opacity
         const title = this.add.text(width / 2, height * 0.3, 'FOCUS UNDER PRESSURE', {
             fontSize: '48px',
             fontFamily: 'Arial',
@@ -133,7 +221,65 @@ class GameScene extends Phaser.Scene {
             this.startGame();
         });
 
-        this.startContainer.add([bg, title, subtext, startBtn, startText]);
+        // LEADERBOARD BUTTON
+        const lbBtn = this.add.text(width / 2, height * 0.85, '🏆 GLOBAL LEADERBOARD', {
+            fontSize: '20px', fontFamily: 'Arial', color: '#888'
+        }).setOrigin(0.5).setInteractive();
+
+        lbBtn.on('pointerdown', () => {
+            this.showLeaderboard(this.startContainer);
+        });
+
+        this.startContainer.add([bg, title, subtext, startBtn, startText, lbBtn]);
+    }
+
+    async showLeaderboard(container) {
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        // Simple overlay
+        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.95);
+        const title = this.add.text(width / 2, 100, "TOP AGENTS", { fontSize: '40px', color: '#00CCFF', fontWeight: 'bold' }).setOrigin(0.5);
+
+        const closeBtn = this.add.text(width / 2, height - 80, "CLOSE", { fontSize: '30px', color: '#fff' }).setOrigin(0.5).setInteractive();
+        closeBtn.on('pointerdown', () => {
+            bg.destroy(); title.destroy(); closeBtn.destroy(); listContainer.destroy();
+            if (loginPromptContainer) loginPromptContainer.destroy();
+        });
+
+        const listContainer = this.add.container(0, 0);
+        container.add([bg, title, closeBtn, listContainer]);
+
+        let loginPromptContainer;
+
+        if (!window.authManager || !window.authManager.isAuthenticated()) {
+            loginPromptContainer = this.add.container(0, 0);
+            const loginText = this.add.text(width / 2, height * 0.4, "Login to view global leaderboard.", {
+                fontSize: '28px', color: '#fff', align: 'center'
+            }).setOrigin(0.5);
+            const loginBtn = this.add.text(width / 2, height * 0.5, "LOGIN", {
+                fontSize: '36px', color: '#00FF88', fontWeight: 'bold'
+            }).setOrigin(0.5).setInteractive();
+
+            loginBtn.on('pointerdown', () => {
+                window.authManager.login();
+            });
+            loginPromptContainer.add([loginText, loginBtn]);
+            container.add(loginPromptContainer);
+            return;
+        }
+
+        // Fetch data
+        const data = await window.authManager.getLeaderboard();
+
+        data.forEach((entry, i) => {
+            const y = 200 + (i * 80);
+            const rank = this.add.text(100, y, `#${i + 1}`, { fontSize: '30px', color: '#fff' }).setOrigin(0, 0.5);
+            const name = this.add.text(200, y, entry.email ? entry.email.split('@')[0] : entry.name || 'Anonymous', { fontSize: '30px', color: '#eee' }).setOrigin(0, 0.5);
+            const score = this.add.text(620, y, entry.score, { fontSize: '30px', color: '#00FF88', fontWeight: 'bold' }).setOrigin(1, 0.5);
+
+            listContainer.add([rank, name, score]);
+        });
     }
 
     startGame() {
@@ -142,13 +288,26 @@ class GameScene extends Phaser.Scene {
         this.hudContainer.setVisible(true);
         this.isGameActive = true;
 
+        // Mode Specific Init
+        this.sessionDuration = (this.gameMode === 'speed') ? 60 : 120;
+
+        if (this.gameMode === 'campaign') {
+            this.levelConfig = this.campaignManager.getCurrentLevel();
+            this.sessionDuration = 0; // Untimed mostly, or we can add a limit? Let's say untimed for now, or just display "TARGETS LEFT"
+            this.stimulusDisplayTime = this.levelConfig.speed;
+        }
+
+        if (this.gameMode === 'endurance') this.sessionDuration = 0; // Infinite
+
         // Reset Stats
         this.score = 0;
-        this.timeLeft = this.sessionDuration;
+        this.timeLeft = (this.gameMode === 'endurance') ? 0 : this.sessionDuration;
         this.reactionTimes = [];
         this.correctHits = 0;
         this.totalStimuli = 0;
+        this.totalStimuli = 0;
         this.currentDifficulty = 1;
+        this.combo = 0; // New Combo Tracker
 
         // Start Timer
         this.gameTimer = this.time.addEvent({
@@ -158,22 +317,116 @@ class GameScene extends Phaser.Scene {
             loop: true
         });
 
-        // Start Spawning
-        this.nextTurn();
+        // Start Spawning (Delay slightly for intro)
+        // Start Spawning (Delay slightly for intro)
+        if (this.gameMode === 'campaign') {
+            this.showLevelIntro(() => {
+                this.securityManager.startSession();
+                this.nextTurn();
+            });
+        } else {
+            this.securityManager.startSession();
+            this.nextTurn();
+        }
+    }
+
+    showLevelIntro(onComplete) {
+        const { width, height } = this.scale;
+        const container = this.add.container(0, 0).setDepth(40);
+
+        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+
+        const line1 = this.add.text(width / 2, height * 0.4, `LEVEL ${this.levelConfig.id}`, {
+            fontSize: '60px', fontFamily: '"Orbitron", sans-serif', color: '#00CCFF', fontStyle: 'bold'
+        }).setOrigin(0.5).setAlpha(0).setScale(2);
+
+        const line2 = this.add.text(width / 2, height * 0.5, this.levelConfig.name.toUpperCase(), {
+            fontSize: '40px', fontFamily: '"Rajdhani", sans-serif', color: '#FFF'
+        }).setOrigin(0.5).setAlpha(0).setY(height * 0.5 + 50);
+
+        const line3 = this.add.text(width / 2, height * 0.6, this.levelConfig.description, {
+            fontSize: '20px', fontFamily: '"Rajdhani", sans-serif', color: '#888'
+        }).setOrigin(0.5).setAlpha(0);
+
+        container.add([bg, line1, line2, line3]);
+
+        // Sequence
+        this.tweens.add({
+            targets: line1,
+            alpha: 1,
+            scale: 1,
+            duration: 500,
+            ease: 'Back.out',
+            onComplete: () => {
+                this.soundManager.playSuccess(); // Reuse success sound as 'ping'
+                this.tweens.add({
+                    targets: [line2, line3],
+                    alpha: 1,
+                    y: '-=20',
+                    duration: 500,
+                    delay: 200,
+                    onComplete: () => {
+                        this.time.delayedCall(1500, () => {
+                            this.tweens.add({
+                                targets: container,
+                                alpha: 0,
+                                duration: 500,
+                                onComplete: () => {
+                                    container.destroy();
+                                    onComplete();
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        });
     }
 
     onSecondElapsed() {
         this.timeLeft--;
-        this.timerText.setText(`TIME: ${this.timeLeft}`);
 
-        // Increase difficulty every 20 seconds
-        if (this.sessionDuration - this.timeLeft > 20 * this.currentDifficulty) {
-            this.currentDifficulty++;
-            // Speed up
-            this.stimulusDisplayTime = Math.max(600, 2000 - (this.currentDifficulty * 200));
+        if (this.gameMode === 'endurance') {
+            this.timerText.setText(`TIME: ${Math.abs(this.timeLeft)}`); // Count UP
+        } else if (this.gameMode === 'campaign') {
+            const left = this.levelConfig.targets - this.correctHits;
+            this.timerText.setText(`REMAINING: ${left}`);
+        } else {
+            this.timerText.setText(`TIME: ${this.timeLeft}`);
         }
 
-        if (this.timeLeft <= 0) {
+        // Audio Tick for last 5 seconds (Only in timed modes)
+        if (this.gameMode !== 'endurance' && this.timeLeft <= 5 && this.timeLeft > 0) {
+            this.soundManager.playTick();
+        }
+
+        // Background Pulse
+        // Replaced simple bg color change with grid tinting or something subtler to not hide grid
+        // this.cameras.main.setBackgroundColor('#1a1a1a'); 
+        // Logic: Flash the camera slightly red/white on ticks? 
+        // Keeping it simple for now, maybe just pulse the text
+        this.tweens.add({
+            targets: this.timerText,
+            scale: 1.1,
+            duration: 100,
+            yoyo: true
+        });
+
+        // Increase difficulty
+        const diffInterval = (this.gameMode === 'speed') ? 10 : 20;
+        const timeElapsed = (this.gameMode === 'endurance') ? Math.abs(this.timeLeft) : (this.sessionDuration - this.timeLeft);
+
+        if (this.gameMode !== 'campaign' && timeElapsed > diffInterval * this.currentDifficulty) {
+            this.currentDifficulty++;
+
+            // Speed Mode scales faster
+            const baseSpeed = (this.gameMode === 'speed') ? 1500 : 2000;
+            const dropRate = (this.gameMode === 'speed') ? 250 : 200;
+
+            this.stimulusDisplayTime = Math.max(500, baseSpeed - (this.currentDifficulty * dropRate));
+        }
+
+        if (this.gameMode !== 'endurance' && this.timeLeft <= 0) {
             this.endGame();
         }
     }
@@ -196,23 +449,14 @@ class GameScene extends Phaser.Scene {
         this.spawnStimulus(true, positions);
 
         // Create Distractors
-        for (let i = 0; i < numDistractors; i++) {
+        const distCount = (this.gameMode === 'campaign') ? this.levelConfig.distractors : numDistractors;
+
+        for (let i = 0; i < distCount; i++) {
             this.spawnStimulus(false, positions);
         }
 
-        // Auto-fail if not clicked in time?
-        // Let's implement a timeout for the next turn to keep pacing
-        // If user doesn't click, the target disappears and we count it as a miss? 
-        // For "Focus" tasks, typically you Wait for the user. 
-        // BUT "Pressure" implies time limit.
-        // Let's make the stimuli fade out.
-
         this.turnTimer = this.time.delayedCall(this.stimulusDisplayTime, () => {
             if (this.isGameActive) {
-                // If this timer triggers, it means player missed the window
-                // If they clicked nothing, it's a "Miss"
-                // However, handling "Missed Target" logic can be complex with multiple objects.
-                // Let's simplify: Clean up and spawn next.
                 this.nextTurn();
             }
         });
@@ -248,11 +492,29 @@ class GameScene extends Phaser.Scene {
         // Visual
         const circle = this.add.circle(x, y, 60, color).setInteractive();
 
+        // Security Log
+        if (isTarget) {
+            this.securityManager.log('SPAWN', { x, y });
+        }
+
+        // Inner circle for "Cyber" look
+        const inner = this.add.circle(x, y, 45, 0x000000);
+        const core = this.add.circle(x, y, 35, color);
+
+        // Group them to destroy easily?
+        // Actually Scene.add.group is better, but keeping it simple with containers or just properties
+        circle.inner = inner;
+        circle.core = core;
+        circle.setDepth(12);
+        inner.setDepth(12);
+        core.setDepth(12);
+
         // Pulse animation
         this.tweens.add({
-            targets: circle,
+            targets: [circle, core],
             scaleX: 1.1,
             scaleY: 1.1,
+            alpha: 0.8,
             duration: 400,
             yoyo: true,
             repeat: -1
@@ -265,55 +527,139 @@ class GameScene extends Phaser.Scene {
             if (!this.isGameActive) return;
 
             if (isTarget) {
-                this.handleSuccess(spawnTime);
+                this.soundManager.playSuccess(this.combo); // Pass combo
+                this.handleSuccess(spawnTime, circle.x, circle.y);
             } else {
+                this.soundManager.playFail(); // Fail resets combo internally in handleFail is best
                 this.handleFailure();
             }
 
-            // Clean up this turn immediately on interaction?
-            // Yes, fast pacing.
+            // Cleanup
             if (this.turnTimer) this.turnTimer.remove();
             this.nextTurn();
         });
 
+        // Hack to make the inner elements click-through or just destroy them with the parent
+        // Actually, just pushing the main circle to activeTargets is enough if we override destroy
+        const originalDestroy = circle.destroy.bind(circle);
+        circle.destroy = () => {
+            if (inner.active) inner.destroy();
+            if (core.active) core.destroy();
+            originalDestroy();
+        };
+
         this.activeTargets.push(circle);
     }
 
-    handleSuccess(spawnTime) {
+    handleSuccess(spawnTime, x, y) {
+        // Security Log
+        this.securityManager.log('HIT', { x, y, rt: this.time.now - spawnTime });
+
         // reaction time
         const rt = this.time.now - spawnTime;
         this.reactionTimes.push(rt);
         this.correctHits++;
         this.totalStimuli++; // We count 'turns' where they acted
+        this.combo++; // Combo Up
 
         // Score formula: Base points + Speed bonus
         const speedBonus = Math.max(0, 1000 - rt);
         const points = 100 + Math.floor(speedBonus / 2);
         this.score += points;
 
+        if (this.gameMode === 'campaign') {
+            if (this.correctHits >= this.levelConfig.targets) {
+                this.campaignWin();
+                return;
+            }
+        }
+
         this.scoreText.setText(`SCORE: ${this.score}`);
-        this.showFloatText(this.currX, this.currY, `+${points}`, 0x00FF00); // Need coords? handled below...
+
+        // Visuals
+        this.emitter.emitParticleAt(x, y, 30); // More particles!
+
+        // Ring Ripple Effect
+        const ring = this.add.circle(x, y, 60, this.colors.target);
+        ring.setStrokeStyle(4, this.colors.target);
+        ring.setFillStyle(0x000000, 0); // Transparent fill
+        this.tweens.add({
+            targets: ring,
+            scale: 3,
+            alpha: 0,
+            duration: 500,
+            onComplete: () => ring.destroy()
+        });
+
+        this.showFloatText(x, y, `+${points}`, 0x00FF00);
+
+        // Show Combo
+        if (this.combo > 1) {
+            this.showFloatText(x, y - 40, `COMBO x${this.combo}`, 0x00CCFF, 1.2 + (this.combo * 0.1));
+        }
     }
 
     handleFailure() {
         this.totalStimuli++;
-        // Penalty?
+
+        // ENDURANCE MODE OR CAMPAIGN: Instant Death if distractor hit? 
+        // Let's make Campaign more forgiving? No, "Interference" says "Do NOT hit them".
+        if (this.gameMode === 'endurance' || (this.gameMode === 'campaign' && this.levelConfig.distractors > 0)) {
+            this.soundManager.playFail();
+            this.cameras.main.shake(400, 0.02);
+            this.endGame();
+            return;
+        }
+
+        // Penalty
         this.score = Math.max(0, this.score - 50);
         this.scoreText.setText(`SCORE: ${this.score}`);
 
+        if (this.combo > 2) {
+            this.showFloatText(this.scale.width / 2, this.scale.height / 2, "COMBO LOST", 0xFF0000, 2);
+        }
+        this.combo = 0; // Reset Combo
+
         // Camera shake or flash
         this.cameras.main.shake(200, 0.01);
+        this.cameras.main.flash(200, 0xff0000, 0.2);
     }
 
-    showFloatText(x, y, msg, color) {
-        // Simple visual feedback could go here, but omitted for brevity/cleanliness
+    showFloatText(x, y, msg, color, scale = 1) {
+        const text = this.add.text(x, y, msg, {
+            fontSize: '32px',
+            fontFamily: '"Orbitron", sans-serif',
+            fontWeight: 'bold',
+            color: typeof color === 'number' ? '#' + color.toString(16) : color,
+            stroke: '#000',
+            strokeThickness: 2
+        }).setOrigin(0.5).setScale(scale);
+
+        this.tweens.add({
+            targets: text,
+            y: y - 50,
+            alpha: 0,
+            duration: 800,
+            onComplete: () => text.destroy()
+        });
     }
 
-    endGame() {
+    async endGame() {
         this.isGameActive = false;
         if (this.gameTimer) this.gameTimer.remove();
         if (this.turnTimer) this.turnTimer.remove();
         if (this.activeTargets) this.activeTargets.forEach(t => t.destroy());
+
+        // Security Validation
+        const replay = await this.securityManager.generateReplayData();
+        const secure = await this.securityManager.verify(replay);
+
+        if (!secure) {
+            alert("SECURITY ALERT: Cheat Detected! Score Voided.");
+            this.score = 0;
+            this.scene.start('GameScene', { mode: 'standard' }); // Reset
+            return;
+        }
 
         // Calculate Stats
         const avgRT = this.reactionTimes.length > 0
@@ -334,33 +680,98 @@ class GameScene extends Phaser.Scene {
             localStorage.setItem('fs_best_rt', avgRT);
         }
 
+        // STREAK & HISTORY TRACKING
+        const historyStr = localStorage.getItem("forcesector_history");
+        const history = historyStr ? JSON.parse(historyStr) : [];
+
+        // Add current session
+        history.push({
+            date: new Date().toISOString().split('T')[0],
+            score: finalScore,
+            rt: avgRT
+        });
+
+        // Keep last 10
+        if (history.length > 10) history.shift();
+        localStorage.setItem("forcesector_history", JSON.stringify(history));
+
         // Show Summary
-        this.showSummary(finalScore, avgRT, accuracy, isNewBest);
+        this.showSummary(finalScore, avgRT, accuracy, isNewBest, history);
+
+        // ECONOMY REWARDS
+        let reward = 0;
+
+        // Campaign Reward
+        if (this.gameMode === 'campaign' && passed && unlocked) {
+            reward += (this.levelConfig.id * 0.05); // Level 1 = 0.05, Level 10 = 0.50
+        }
+
+        // Performance Reward
+        const rating = this.getRating(avgRT, accuracy);
+        if (rating.title === "CYBER GOD") reward += 0.10;
+        else if (rating.title === "ELITE AGENT") reward += 0.05;
+
+        // Apply
+        if (reward > 0 && window.economyManager) {
+            window.economyManager.addBonus(reward);
+            // Show on summary
+            this.currentReward = reward; // Pass to showSummary via property or argument, but showSummary is already called.
+            // Actually, showSummary is called BEFORE this. Let me move this logic INSIDE showSummary or call showSummary AFTER this.
+            // Moving showSummary call to AFTER this block and passing reward.
+        }
+
+        // Show Summary (Moved from above)
+        this.showSummary(finalScore, avgRT, accuracy, isNewBest, history, reward); // Passing reward
+
+        // No auto-submit. Waiting for user input.
     }
 
-    showSummary(score, rt, acc, isBest) {
+    getRating(rt, acc) {
+        // Accuracy penalty
+        if (acc < 80) return { title: "UNSTABLE", color: "#FF3333" }; // Red
+
+        if (rt < 250) return { title: "CYBER GOD", color: "#FFD700" }; // Gold
+        if (rt < 350) return { title: "ELITE AGENT", color: "#00FF88" }; // Green
+        if (rt < 450) return { title: "OPERATIVE", color: "#00CCFF" }; // Blue
+        if (rt < 600) return { title: "ROOKIE", color: "#FFFFFF" }; // White
+        return { title: "CIVILIAN", color: "#888888" }; // Grey
+    }
+
+    showSummary(score, rt, acc, isBest, history, reward = 0) {
         const width = this.scale.width;
         const height = this.scale.height;
 
         const container = this.add.container(0, 0).setDepth(30);
         const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.95);
 
-        const title = this.add.text(width / 2, height * 0.2, 'SESSION COMPLETE', {
+        const title = this.add.text(width / 2, height * 0.15, 'SESSION COMPLETE', {
             fontSize: '48px', fontFamily: 'Arial', fontWeight: 'bold', color: '#fff'
         }).setOrigin(0.5);
 
-        const scoreLabel = this.add.text(width / 2, height * 0.35, `${score}`, {
+        const scoreLabel = this.add.text(width / 2, height * 0.30, `${score}`, {
             fontSize: '80px', fontFamily: 'Arial', fontWeight: 'bold', color: this.colors.target
         }).setOrigin(0.5);
 
-        const scoreSub = this.add.text(width / 2, height * 0.42, isBest ? 'NEW PERSONAL BEST!' : 'FINAL SCORE', {
+        const scoreSub = this.add.text(width / 2, height * 0.38, isBest ? 'NEW PERSONAL BEST!' : 'FINAL SCORE', {
             fontSize: '24px', fontFamily: 'Arial', color: '#aaa'
         }).setOrigin(0.5);
 
+        // Rating Logic
+        const rating = this.getRating(rt, acc);
+        const ratingText = this.add.text(width / 2, height * 0.48, rating.title, {
+            fontSize: '40px', fontFamily: '"Orbitron", sans-serif', fontWeight: 'bold', color: rating.color
+        }).setOrigin(0.5).setShadow(0, 0, rating.color, 10);
+
         const statsText = `Avg Reaction: ${rt}ms\nAccuracy: ${acc}%`;
-        const stats = this.add.text(width / 2, height * 0.55, statsText, {
+        const stats = this.add.text(width / 2, height * 0.58, statsText, {
             fontSize: '32px', fontFamily: 'Arial', color: '#fff', align: 'center', lineSpacing: 10
         }).setOrigin(0.5);
+
+        if (reward > 0) {
+            this.add.text(width / 2, height * 0.65, `BONUS EARNED: $${reward.toFixed(2)}`, {
+                fontSize: '36px', fontFamily: '"Orbitron", sans-serif', color: '#00FF88', fontWeight: 'bold'
+            }).setOrigin(0.5).setShadow(0, 0, '#00FF88', 20);
+        }
 
         const restartBtn = this.add.rectangle(width / 2, height * 0.75, 300, 80, 0xffffff).setInteractive();
         const restartText = this.add.text(width / 2, height * 0.75, 'TRAIN AGAIN', {
@@ -371,28 +782,216 @@ class GameScene extends Phaser.Scene {
             this.scene.restart();
         });
 
-        container.add([bg, title, scoreLabel, scoreSub, stats, restartBtn, restartText]);
+        this.drawHistoryChart(container, history, width, height);
+
+        // SUBMIT SCORE BUTTON
+        const submitBtn = this.add.rectangle(width / 2, height * 0.85, 300, 60, 0x00CCFF).setInteractive();
+        const submitText = this.add.text(width / 2, height * 0.85, 'SUBMIT TO ARCHIVE', {
+            fontSize: '24px', fontFamily: 'Arial', fontWeight: 'bold', color: '#000'
+        }).setOrigin(0.5);
+
+        submitBtn.on('pointerdown', async () => {
+            if (window.authManager) {
+                await window.authManager.submitScore(score, this.gameMode);
+                submitText.setText("ARCHIVED ✓");
+                submitBtn.disableInteractive();
+                submitBtn.setFillStyle(0x555555);
+            }
+        });
+
+        container.add([bg, title, scoreLabel, scoreSub, ratingText, stats, restartBtn, restartText, submitBtn, submitText]);
     }
 
-    showLockedScreen() {
+    drawHistoryChart(container, history, width, height) {
+        if (!history || history.length < 2) return;
+
+        const chartHeight = 150;
+        const chartWidth = 400;
+        const startX = width / 2 - chartWidth / 2;
+        const startY = height * 0.55 + 60; // Below stats
+
+        const graphics = this.scene.scene.add.graphics();
+        container.add(graphics);
+
+        graphics.lineStyle(2, 0x555555, 1);
+        graphics.beginPath();
+        graphics.moveTo(startX, startY + chartHeight);
+        graphics.lineTo(startX + chartWidth, startY + chartHeight);
+        graphics.strokePath();
+
+        // Normalize scores for chart
+        const maxScore = Math.max(...history.map(h => h.score), 100);
+        const barWidth = (chartWidth / history.length) - 10;
+
+        history.forEach((h, index) => {
+            const hRatio = h.score / maxScore;
+            const hHeight = hRatio * chartHeight;
+            const x = startX + index * (barWidth + 10);
+            const y = startY + chartHeight - hHeight;
+
+            graphics.fillStyle(h.score === this.score ? 0x00FF88 : 0x00CCFF, 0.8);
+            graphics.fillRect(x, y, barWidth, hHeight);
+        });
+
+        // Label
+        const label = this.scene.scene.add.text(width / 2, startY + chartHeight + 10, "LAST SESSIONS", {
+            fontSize: '14px', fontFamily: 'Arial', color: '#666'
+        }).setOrigin(0.5);
+        container.add(label);
+    }
+
+    showLockedScreen(isLoggedIn) {
         const { width, height } = this.scale;
 
-        this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
+        // Darker, red-tinted background
+        this.add.rectangle(width / 2, height / 2, width, height, 0x110000, 0.95);
 
-        this.add.text(width / 2, height / 2 - 40,
-            "DAILY TRAINING COMPLETE",
-            { fontSize: "24px", color: "#ffffff" }
-        ).setOrigin(0.5);
+        // Security Icon (Mocked with text)
+        this.add.text(width / 2, height * 0.25, "🔒", { fontSize: '80px' }).setOrigin(0.5);
 
-        const upgrade = this.add.text(width / 2, height / 2 + 20,
-            "UNLOCK PRO TRAINING",
-            { fontSize: "18px", color: "#00ff00" }
-        ).setOrigin(0.5).setInteractive();
+        this.add.text(width / 2, height * 0.35, "ACCESS DENIED", {
+            fontSize: "48px", color: "#FF3333", fontFamily: "Orbitron", fontWeight: "bold"
+        }).setOrigin(0.5).setShadow(0, 0, '#FF0000', 20);
 
-        upgrade.on("pointerdown", () => {
+        this.add.text(width / 2, height * 0.42, "DAILY TRAINING ALLOWANCE EXCEEDED", {
+            fontSize: "20px", color: "#888", fontFamily: "Rajdhani", letterSpacing: "2px"
+        }).setOrigin(0.5);
+
+        if (!isLoggedIn) {
+            // ... existing Guest prompts ...
+            this.add.text(width / 2, height / 2,
+                "REGISTER TO UNLOCK 3 DAILY ATTEMPTS",
+                { fontSize: "24px", color: "#fff", fontFamily: "Rajdhani" }
+            ).setOrigin(0.5);
+            // ...
+            const loginBtn = this.add.rectangle(width / 2, height / 2 + 80, 280, 60, 0x00CCFF).setInteractive();
+            this.add.text(width / 2, height / 2 + 80, "ACCESS TERMINAL", { fontSize: '24px', color: '#000', fontWeight: 'bold' }).setOrigin(0.5);
+
+            loginBtn.on('pointerdown', () => {
+                window.authManager.showLogin();
+                window.authManager.loginResolve = (user) => { if (user) this.scene.restart(); };
+            });
+
+        } else {
+            this.add.text(width / 2, height * 0.55,
+                "ELITE STATUS REQUIRED FOR CONTINUED OPERATION",
+                { fontSize: "20px", color: "#fff", fontFamily: "Rajdhani" }
+            ).setOrigin(0.5);
+        }
+
+        // AGGRESSIVE UPGRADE BUTTON
+        const upgradeBtn = this.add.rectangle(width / 2, height * 0.75, 400, 100, 0xFFD700).setInteractive();
+
+        // Blink effect
+        this.tweens.add({
+            targets: upgradeBtn,
+            alpha: 0.8,
+            duration: 500,
+            yoyo: true,
+            repeat: -1
+        });
+
+        this.add.text(width / 2, height * 0.72, "UPGRADE TO PRO", {
+            fontSize: "36px", color: "#000", fontFamily: "Orbitron", fontWeight: "bold"
+        }).setOrigin(0.5);
+
+        this.add.text(width / 2, height * 0.78, "UNLIMITED ACCESS • $9.99/MO", {
+            fontSize: "20px", color: "#333", fontFamily: "Rajdhani", fontWeight: "bold"
+        }).setOrigin(0.5);
+
+        upgradeBtn.on("pointerdown", () => {
             window.location.href = "https://forcesector.com/products/force-sector-pro";
         });
+
+        this.add.text(width / 2, height * 0.9, "NO RESTRICTIONS. NO LIMITS.", {
+            fontSize: "16px", color: "#444", fontFamily: "Rajdhani"
+        }).setOrigin(0.5);
     }
+
+    campaignWin() {
+        this.isGameActive = false;
+        if (this.gameTimer) this.gameTimer.remove();
+        if (this.turnTimer) this.turnTimer.remove();
+        if (this.activeTargets) this.activeTargets.forEach(t => t.destroy());
+
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+
+        // Check Minimum Score
+        const minPoints = this.levelConfig.minScore || 0;
+        const passed = this.score >= minPoints;
+
+        let unlocked = false;
+        let reward = 0;
+
+        if (passed) {
+            // Unlock Logic
+            unlocked = this.campaignManager.unlockNextLevel(this.levelConfig.id);
+
+            // Reward
+            reward = (this.levelConfig.id * 0.05); // Cash Reward
+            if (window.economyManager) window.economyManager.addBonus(reward);
+        }
+
+        const titleText = passed ? "SECTOR CLEARED" : "SECTOR FAILED";
+        const titleColor = passed ? "#00FF88" : "#FF3333";
+
+        this.add.text(width / 2, height * 0.3, titleText, {
+            fontSize: '48px', fontFamily: '"Orbitron", sans-serif', color: titleColor, fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        this.add.text(width / 2, height * 0.45, `SCORE: ${this.score}`, {
+            fontSize: '60px', fontFamily: '"Orbitron", sans-serif', color: '#fff'
+        }).setOrigin(0.5);
+
+        this.add.text(width / 2, height * 0.55, `REQ: ${minPoints}`, {
+            fontSize: '24px', fontFamily: '"Rajdhani", sans-serif', color: '#888'
+        }).setOrigin(0.5);
+
+        if (!passed) {
+            this.add.text(width / 2, height * 0.6, "PERFORMANCE INSUFFICIENT", {
+                fontSize: '24px', fontFamily: '"Rajdhani", sans-serif', color: '#FF3333'
+            }).setOrigin(0.5);
+        } else if (reward > 0) {
+            this.add.text(width / 2, height * 0.6, `CREDITS ACCRUED: $${reward.toFixed(2)}`, {
+                fontSize: '32px', fontFamily: '"Orbitron", sans-serif', color: '#00FF88'
+            }).setOrigin(0.5);
+        }
+
+        const btnText = passed ? "NEXT SECTOR >" : "RETRY SECTOR";
+
+        // If passed but no next level (game complete)
+        const isGameComplete = passed && !unlocked && this.levelConfig.id >= 20; // Last level
+        const finalBtnText = isGameComplete ? "CAMPAIGN COMPLETE" : btnText;
+
+        const btn = this.add.rectangle(width / 2, height * 0.75, 300, 80, passed ? 0x00CCFF : 0xFFFFFF).setInteractive();
+        this.add.text(width / 2, height * 0.75, finalBtnText, {
+            fontSize: '32px', fontFamily: 'Arial', fontWeight: 'bold', color: '#000'
+        }).setOrigin(0.5);
+
+        btn.on('pointerdown', () => {
+            if (passed && !isGameComplete) {
+                // Determine next level
+                // Simple reload to fetch new Level ID from storage? Or update scene data?
+                // Reloading checks storage in create()
+                this.scene.restart();
+            } else {
+                this.scene.restart();
+            }
+        });
+
+        // Return to Menu
+        const menuBtn = this.add.text(width / 2, height * 0.9, "EXIT TO MENU", {
+            fontSize: '24px', fontFamily: 'Arial', color: '#888'
+        }).setOrigin(0.5).setInteractive();
+
+        menuBtn.on('pointerdown', () => {
+            window.location.reload(); // Simplest way to get back to mode select for now
+        });
+    }
+
 
     registerSession() {
         if (this.sessionRegistered) return;
