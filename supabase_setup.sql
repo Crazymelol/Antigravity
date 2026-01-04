@@ -62,3 +62,6 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Enable Realtime for Matches (Required for Live 1v1)
+alter publication supabase_realtime add table matches;

@@ -109,6 +109,21 @@ export async function submitMatchScore(matchId, score) {
     return { match: data, isFinished };
 }
 
+export function subscribeToMatch(matchId, onUpdate) {
+    console.log("Subscribing to match updates:", matchId);
+    return supabase
+        .channel(`match_tracking:${matchId}`)
+        .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
+            (payload) => {
+                console.log("Match Update Received:", payload.new);
+                onUpdate(payload.new);
+            }
+        )
+        .subscribe();
+}
+
 
 function createMockClient() {
     const MOCK_LEADERBOARD = [

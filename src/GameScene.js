@@ -82,6 +82,13 @@ export default class GameScene extends Phaser.Scene {
         // --- UI Layers ---
         this.createUI();
 
+        // --- Live 1v1 Setup ---
+        if (this.gameMode === 'tournament' && this.matchId) {
+            import('./supabaseClient.js').then(({ subscribeToMatch }) => {
+                this.setupLiveMultiplayer(subscribeToMatch);
+            });
+        }
+
         // --- Input ---
         this.input.topOnly = true;
 
@@ -147,8 +154,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createUI() {
-        this.createGridBackground(); // Init grid
         const width = this.scale.width;
+
+        // Opponent Score UI (Hidden by default, shown in setupLiveMultiplayer)
+        this.opponentScoreText = this.add.text(width - 20, 100, "", {
+            fontSize: '32px', fontFamily: '"Orbitron", sans-serif', color: '#FF3333', fontWeight: 'bold'
+        }).setOrigin(1, 0.5).setDepth(20).setVisible(false);
+
+        // Score Text
+        this.createGridBackground(); // Init grid
+        // const width = this.scale.width; // Removed redundant declaration
 
         // Header Background
         this.add.rectangle(width / 2, 60, width, 120, 0x000000, 0.8).setDepth(10);
@@ -1071,5 +1086,37 @@ export default class GameScene extends Phaser.Scene {
 
         let sessions = parseInt(localStorage.getItem("forcesector_sessions") || "0");
         localStorage.setItem("forcesector_sessions", sessions + 1);
+    }
+
+    setupLiveMultiplayer(subscribeToMatch) {
+        this.opponentScoreText.setVisible(true);
+        this.opponentScoreText.setText("OPPONENT: 0");
+
+        this.matchSubscription = subscribeToMatch(this.matchId, (updatedMatch) => {
+            // Determine if we are P1 or P2 to find Opponent Score
+            // If we don't have user_id easily, we can deduce it:
+            // We are NOT the one whose score equals our local score? No, that's risky.
+            // Let's assume AuthManager has user.
+
+            const myId = window.authManager?.user?.id;
+            if (!myId) return;
+
+            let oppScore = 0;
+            if (updatedMatch.player1_id === myId) {
+                oppScore = updatedMatch.p2_score;
+            } else {
+                oppScore = updatedMatch.p1_score;
+            }
+
+            this.opponentScoreText.setText(`OPPONENT: ${oppScore}`);
+
+            // Effect on score change?
+            this.tweens.add({
+                targets: this.opponentScoreText,
+                scale: 1.2,
+                duration: 100,
+                yoyo: true
+            });
+        });
     }
 }
