@@ -978,97 +978,98 @@ export default class GameScene extends Phaser.Scene {
                 });
             }
         }
-
-        campaignWin() {
-            this.isGameActive = false;
-            if (this.gameTimer) this.gameTimer.remove();
-            if (this.turnTimer) this.turnTimer.remove();
-            if (this.activeTargets) this.activeTargets.forEach(t => t.destroy());
-
-            const width = this.scale.width;
-            const height = this.scale.height;
-
-            this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
-
-            // Check Minimum Score
-            const minPoints = this.levelConfig.minScore || 0;
-            const passed = this.score >= minPoints;
-
-            let unlocked = false;
-            let reward = 0;
-
-            if (passed) {
-                // Unlock Logic
-                unlocked = this.campaignManager.unlockNextLevel(this.levelConfig.id);
-
-                // Reward
-                reward = (this.levelConfig.id * 0.05); // Cash Reward
-                if (window.economyManager) window.economyManager.addBonus(reward);
-            }
-
-            const titleText = passed ? "SECTOR CLEARED" : "SECTOR FAILED";
-            const titleColor = passed ? "#00FF88" : "#FF3333";
-
-            this.add.text(width / 2, height * 0.3, titleText, {
-                fontSize: '48px', fontFamily: '"Orbitron", sans-serif', color: titleColor, fontWeight: 'bold'
-            }).setOrigin(0.5);
-
-            this.add.text(width / 2, height * 0.45, `SCORE: ${this.score}`, {
-                fontSize: '60px', fontFamily: '"Orbitron", sans-serif', color: '#fff'
-            }).setOrigin(0.5);
-
-            this.add.text(width / 2, height * 0.55, `REQ: ${minPoints}`, {
-                fontSize: '24px', fontFamily: '"Rajdhani", sans-serif', color: '#888'
-            }).setOrigin(0.5);
-
-            if (!passed) {
-                this.add.text(width / 2, height * 0.6, "PERFORMANCE INSUFFICIENT", {
-                    fontSize: '24px', fontFamily: '"Rajdhani", sans-serif', color: '#FF3333'
-                }).setOrigin(0.5);
-            } else if (reward > 0) {
-                this.add.text(width / 2, height * 0.6, `CREDITS ACCRUED: $${reward.toFixed(2)}`, {
-                    fontSize: '32px', fontFamily: '"Orbitron", sans-serif', color: '#00FF88'
-                }).setOrigin(0.5);
-            }
-
-            const btnText = passed ? "NEXT SECTOR >" : "RETRY SECTOR";
-
-            // If passed but no next level (game complete)
-            const isGameComplete = passed && !unlocked && this.levelConfig.id >= 20; // Last level
-            const finalBtnText = isGameComplete ? "CAMPAIGN COMPLETE" : btnText;
-
-            const btn = this.add.rectangle(width / 2, height * 0.75, 300, 80, passed ? 0x00CCFF : 0xFFFFFF).setInteractive();
-            this.add.text(width / 2, height * 0.75, finalBtnText, {
-                fontSize: '32px', fontFamily: 'Arial', fontWeight: 'bold', color: '#000'
-            }).setOrigin(0.5);
-
-            btn.on('pointerdown', () => {
-                if (passed && !isGameComplete) {
-                    // Determine next level
-                    // Simple reload to fetch new Level ID from storage? Or update scene data?
-                    // Reloading checks storage in create()
-                    this.scene.restart();
-                } else {
-                    this.scene.restart();
-                }
-            });
-
-            // Return to Menu
-            const menuBtn = this.add.text(width / 2, height * 0.9, "EXIT TO MENU", {
-                fontSize: '24px', fontFamily: 'Arial', color: '#888'
-            }).setOrigin(0.5).setInteractive();
-
-            menuBtn.on('pointerdown', () => {
-                window.location.reload(); // Simplest way to get back to mode select for now
-            });
-        }
-
-
-        registerSession() {
-            if (this.sessionRegistered) return;
-            this.sessionRegistered = true;
-
-            let sessions = parseInt(localStorage.getItem("forcesector_sessions") || "0");
-            localStorage.setItem("forcesector_sessions", sessions + 1);
-        }
     }
+
+    campaignWin() {
+        this.isGameActive = false;
+        if (this.gameTimer) this.gameTimer.remove();
+        if (this.turnTimer) this.turnTimer.remove();
+        if (this.activeTargets) this.activeTargets.forEach(t => t.destroy());
+
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+
+        // Check Minimum Score
+        const minPoints = this.levelConfig.minScore || 0;
+        const passed = this.score >= minPoints;
+
+        let unlocked = false;
+        let reward = 0;
+
+        if (passed) {
+            // Unlock Logic
+            unlocked = this.campaignManager.unlockNextLevel(this.levelConfig.id);
+
+            // Reward
+            reward = (this.levelConfig.id * 0.05); // Cash Reward
+            if (window.economyManager) window.economyManager.addBonus(reward);
+        }
+
+        const titleText = passed ? "SECTOR CLEARED" : "SECTOR FAILED";
+        const titleColor = passed ? "#00FF88" : "#FF3333";
+
+        this.add.text(width / 2, height * 0.3, titleText, {
+            fontSize: '48px', fontFamily: '"Orbitron", sans-serif', color: titleColor, fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        this.add.text(width / 2, height * 0.45, `SCORE: ${this.score}`, {
+            fontSize: '60px', fontFamily: '"Orbitron", sans-serif', color: '#fff'
+        }).setOrigin(0.5);
+
+        this.add.text(width / 2, height * 0.55, `REQ: ${minPoints}`, {
+            fontSize: '24px', fontFamily: '"Rajdhani", sans-serif', color: '#888'
+        }).setOrigin(0.5);
+
+        if (!passed) {
+            this.add.text(width / 2, height * 0.6, "PERFORMANCE INSUFFICIENT", {
+                fontSize: '24px', fontFamily: '"Rajdhani", sans-serif', color: '#FF3333'
+            }).setOrigin(0.5);
+        } else if (reward > 0) {
+            this.add.text(width / 2, height * 0.6, `CREDITS ACCRUED: $${reward.toFixed(2)}`, {
+                fontSize: '32px', fontFamily: '"Orbitron", sans-serif', color: '#00FF88'
+            }).setOrigin(0.5);
+        }
+
+        const btnText = passed ? "NEXT SECTOR >" : "RETRY SECTOR";
+
+        // If passed but no next level (game complete)
+        const isGameComplete = passed && !unlocked && this.levelConfig.id >= 20; // Last level
+        const finalBtnText = isGameComplete ? "CAMPAIGN COMPLETE" : btnText;
+
+        const btn = this.add.rectangle(width / 2, height * 0.75, 300, 80, passed ? 0x00CCFF : 0xFFFFFF).setInteractive();
+        this.add.text(width / 2, height * 0.75, finalBtnText, {
+            fontSize: '32px', fontFamily: 'Arial', fontWeight: 'bold', color: '#000'
+        }).setOrigin(0.5);
+
+        btn.on('pointerdown', () => {
+            if (passed && !isGameComplete) {
+                // Determine next level
+                // Simple reload to fetch new Level ID from storage? Or update scene data?
+                // Reloading checks storage in create()
+                this.scene.restart();
+            } else {
+                this.scene.restart();
+            }
+        });
+
+        // Return to Menu
+        const menuBtn = this.add.text(width / 2, height * 0.9, "EXIT TO MENU", {
+            fontSize: '24px', fontFamily: 'Arial', color: '#888'
+        }).setOrigin(0.5).setInteractive();
+
+        menuBtn.on('pointerdown', () => {
+            window.location.reload(); // Simplest way to get back to mode select for now
+        });
+    }
+
+
+    registerSession() {
+        if (this.sessionRegistered) return;
+        this.sessionRegistered = true;
+
+        let sessions = parseInt(localStorage.getItem("forcesector_sessions") || "0");
+        localStorage.setItem("forcesector_sessions", sessions + 1);
+    }
+}
