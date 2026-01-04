@@ -1,8 +1,8 @@
-const DAILY_LIMIT = 1;
-
 import SoundManager from './SoundManager.js';
 import CampaignManager from './CampaignManager.js';
 import SecurityManager from './SecurityManager.js';
+
+const DAILY_LIMIT = 1;
 
 export default class GameScene extends Phaser.Scene {
     constructor() {

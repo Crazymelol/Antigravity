@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+// Phaser is global
 
 export default class ShopScene extends Phaser.Scene {
     constructor() {
