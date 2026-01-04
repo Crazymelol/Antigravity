@@ -2,6 +2,7 @@ import AuthManager from './AuthManager.js';
 import GameScene from './GameScene.js';
 import ShopScene from './ShopScene.js';
 import EconomyManager from './EconomyManager.js';
+import SoundManager from './SoundManager.js';
 
 const config = {
     type: Phaser.AUTO,
