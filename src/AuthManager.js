@@ -75,7 +75,22 @@ export default class AuthManager {
             return;
         }
 
+        const btn = document.getElementById('auth-login-btn');
+        const setBtnState = (busy) => {
+            if (!btn) return;
+            if (busy) {
+                btn.disabled = true;
+                btn.style.opacity = "0.5";
+                btn.innerText = "VERIFYING...";
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.innerText = "SUBMIT RECORD";
+            }
+        };
+
         msg.innerText = "Authenticating...";
+        setBtnState(true);
 
         try {
             // Try Login
@@ -91,12 +106,14 @@ export default class AuthManager {
 
                 if (res.error) {
                     msg.innerText = res.error.message;
+                    setBtnState(false);
                     return;
                 }
 
                 // Check if email confirmation is required (session is null)
                 if (res.data.user && !res.data.session) {
                     msg.innerText = "Confirmation link sent to email.";
+                    setBtnState(false);
                     return;
                 }
 
@@ -105,6 +122,7 @@ export default class AuthManager {
 
             if (!data.user) {
                 msg.innerText = "Authentication failed.";
+                setBtnState(false);
                 return;
             }
 
@@ -127,41 +145,41 @@ export default class AuthManager {
         } catch (e) {
             console.error("Login Error:", e);
             msg.innerText = "Connection Error. Try again.";
+            setBtnState(false);
         }
-    }
 
-    showLogin() {
-        this.createOverlay();
-        document.getElementById('auth-overlay').style.display = 'flex';
-    }
+        showLogin() {
+            this.createOverlay();
+            document.getElementById('auth-overlay').style.display = 'flex';
+        }
 
     async signOut() {
-        await supabase.auth.signOut();
-        this.user = null;
-    }
+            await supabase.auth.signOut();
+            this.user = null;
+        }
 
     // The updateUI method is no longer used or needed with the new requireUser flow.
     // It has been removed as per the implicit instruction of the diff.
 
     async submitScore(score, mode) {
-        const user = await this.requireUser();
-        if (!user) return; // User cancelled
+            const user = await this.requireUser();
+            if (!user) return; // User cancelled
 
-        await supabase.from('scores').insert({
-            user_id: user.id,
-            email: user.email,
-            name: user.user_metadata?.name || 'Agent', // Use the name!
-            score: score,
-            mode: mode,
-            created_at: new Date()
-        });
+            await supabase.from('scores').insert({
+                user_id: user.id,
+                email: user.email,
+                name: user.user_metadata?.name || 'Agent', // Use the name!
+                score: score,
+                mode: mode,
+                created_at: new Date()
+            });
 
-        alert("Score Archived Successfully.");
-    }
+            alert("Score Archived Successfully.");
+        }
 
     async getLeaderboard() {
-        const { data } = await supabase.from('scores').select('name, score').order('score', { ascending: false }).limit(10);
-        return data || [];
+            const { data } = await supabase.from('scores').select('name, score').order('score', { ascending: false }).limit(10);
+            return data || [];
+        }
     }
-}
 

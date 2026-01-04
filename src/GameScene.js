@@ -720,6 +720,8 @@ export default class GameScene extends Phaser.Scene {
         let reward = 0;
 
         // Campaign Reward
+        const passed = false; // logic handled in campaignWin, this is endGame (fail/timeout)
+        const unlocked = false;
         if (this.gameMode === 'campaign' && passed && unlocked) {
             reward += (this.levelConfig.id * 0.05); // Level 1 = 0.05, Level 10 = 0.50
         }
