@@ -1,6 +1,7 @@
-[build]
-  publish = "."
-  command = "npm run build"
+# Static Site - No Build Config Needed
+# [build]
+#   publish = "."
+#   command = "npm run build"
 
 [[headers]]
   for = "/*"

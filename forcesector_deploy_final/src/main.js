@@ -1,7 +1,9 @@
-import AuthManager from './AuthManager.js';
-import GameScene from './GameScene.js';
-import ShopScene from './ShopScene.js';
-import EconomyManager from './EconomyManager.js';
+
+import AuthManager from './AuthManager.js?v=1';
+import GameScene from './GameScene.js?v=1';
+import ShopScene from './ShopScene.js?v=1';
+import EconomyManager from './EconomyManager.js?v=1';
+import SoundManager from './SoundManager.js?v=1';
 
 const config = {
     type: Phaser.AUTO,
